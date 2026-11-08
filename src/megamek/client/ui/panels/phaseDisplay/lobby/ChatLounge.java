@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2000-2006 Ben Mazur (bmazur@sev.org)
  * Copyright (C) 2013 Edward Cullen (eddy@obsessedcomputers.co.uk)
- * Copyright (C) 2002-2025 The MegaMek Team. All Rights Reserved.
+ * Copyright (C) 2002-2026 The MegaMek Team. All Rights Reserved.
  *
  * This file is part of MegaMek.
  *
@@ -34,6 +34,7 @@
  */
 package megamek.client.ui.panels.phaseDisplay.lobby;
 
+import megamek.common.alphaStrike.ASMessages;
 import megamek.common.alphaStrike.play.ASLobbySupport;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -221,7 +222,7 @@ public class ChatLounge extends AbstractPhaseDisplay
     private final JButton butLoadList = new JButton(Messages.getString("ChatLounge.butLoadList"));
     private final JButton butSaveList = new JButton(Messages.getString("ChatLounge.butSaveList"));
     private final JButton butPrintList = new JButton(Messages.getString("ChatLounge.butPrintList"));
-    private final JButton butC3Groups = new JButton("C3 Groups...");
+    private final JButton butC3Groups = new JButton(ASMessages.getString("ASC3GroupDialog.button"));
 
     /* Unit Table */
     private MekTable mekTable;
@@ -651,7 +652,7 @@ public class ChatLounge extends AbstractPhaseDisplay
         panUnitInfoGrid.add(butNames);
         panUnitInfoGrid.add(butPrintList);
         panUnitInfoGrid.add(butC3Groups);
-        butC3Groups.setToolTipText("Build C3 / C3i / Nova networks by clicking units");
+        butC3Groups.setToolTipText(ASMessages.getString("ASC3GroupDialog.buttonTip"));
         butC3Groups.addActionListener(e -> new ASC3GroupDialog(clientgui.getFrame(), this).setVisible(true));
 
         panUnitInfo.add(panUnitInfoAdd);

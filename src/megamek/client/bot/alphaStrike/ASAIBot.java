@@ -1,11 +1,38 @@
 /*
  * Copyright (C) 2026 The MegaMek Team. All Rights Reserved.
  *
- * This file is part of MegaMek. MegaMek is free software: you can redistribute it and/or modify it under the terms of
- * the GNU General Public License (GPL), version 3 or (at your option) any later version.
+ * This file is part of MegaMek.
+ *
+ * MegaMek is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License (GPL),
+ * version 3 or (at your option) any later version,
+ * as published by the Free Software Foundation.
+ *
+ * MegaMek is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * A copy of the GPL should have been included with this project;
+ * if not, see <https://www.gnu.org/licenses/>.
+ *
+ * NOTICE: The MegaMek organization is a non-profit group of volunteers
+ * creating free software for the BattleTech community.
+ *
+ * MechWarrior, BattleMech, `Mech and AeroTech are registered trademarks
+ * of The Topps Company, Inc. All Rights Reserved.
+ *
+ * Catalyst Game Labs and the Catalyst Game Labs logo are trademarks of
+ * InMediaRes Productions, LLC.
+ *
+ * MechWarrior Copyright Microsoft Corporation. MegaMek was created under
+ * Microsoft's "Game Content Usage Rules"
+ * <https://www.xbox.com/en-US/developers/rules> and it is not endorsed by or
+ * affiliated with Microsoft.
  */
 package megamek.client.bot.alphaStrike;
 
+import megamek.common.alphaStrike.ASMessages;
 import java.util.List;
 import java.util.Random;
 
@@ -23,13 +50,14 @@ import megamek.common.enums.GamePhase;
 import megamek.logging.MMLogger;
 
 /**
- * Alpha Strike bot that asks the trained AI (as_ai_engine, via {@link ASAIBridge}) for every move and attack. Bot types:
+ * Alpha Strike bot that asks the trained AI (as_ai_engine, via {@link ASAIBridge}) for every move and attack. Bot
+ * types:
  * "ai_v3" = look-ahead (strongest), "ai" = the network alone. If the AI can't be reached, or it suggests something
  * the rules don't allow, the scripted bot's choice is used for that decision.
  */
 public class ASAIBot extends ASScriptedBot {
 
-    private static final MMLogger logger = MMLogger.create(ASAIBot.class);
+    private static final MMLogger LOGGER = MMLogger.create(ASAIBot.class);
 
     private final String botType;
     private final Random seeds = new Random();
@@ -42,6 +70,7 @@ public class ASAIBot extends ASScriptedBot {
         return new int[] { aiDecisions, fallbacks };
     }
 
+    /** An AI bot of this type (ai_v3 or ai) connecting to the game server. */
     public ASAIBot(String name, String host, int port, String botType) {
         super(name, host, port);
         this.botType = botType;
@@ -50,7 +79,7 @@ public class ASAIBot extends ASScriptedBot {
             try {
                 ASAIBridge.get();
             } catch (Exception ex) {
-                logger.error(ex, "The AI could not be started - " + name + " will play as the scripted bot");
+                LOGGER.error(ex, "The AI could not be started - {} will play as the scripted bot", name);
             }
         }, "AI start");
         warmUp.setDaemon(true);
@@ -65,15 +94,15 @@ public class ASAIBot extends ASScriptedBot {
             int dest = r.path("a").asInt();
             int mode = r.path("b").asInt();
             int facing = r.path("c").asInt();
-            boolean legal = unit != null && ready.contains(unit)
-                  && engine.legalMoves(unit).stream().anyMatch(m -> m.dest() == dest && m.mode() == mode);
+            boolean legal = (unit != null) && ready.contains(unit)
+                  && engine.legalMoves(unit).stream().anyMatch(m -> (m.dest() == dest) && (m.mode() == mode));
             if (legal) {
                 ASBoard b = game.asBoard();
                 moveUnit(unit.getId(), dest % b.width, dest / b.width, mode, facing);
                 aiDecisions++;
                 return;
             }
-            logger.warn("The AI suggested an illegal move {}; using the scripted bot's move", r);
+            LOGGER.warn("The AI suggested an illegal move {}; using the scripted bot's move", r);
         } catch (Exception ex) {
             warnOnce(ex);
         }
@@ -89,14 +118,14 @@ public class ASAIBot extends ASScriptedBot {
             int target = r.path("a").asInt();
             boolean physical = r.path("b").asInt() == 1;
             int ov = r.path("c").asInt();
-            if (unit != null && ready.contains(unit)) {
+            if ((unit != null) && ready.contains(unit)) {
                 if (target < 0) {
                     attack(unit.getId(), -1, false, 0);
                     aiDecisions++;
                     return;
                 }
                 for (AttackInfo info : engine.attackOptions(unit)) {
-                    if (info.target() == target && info.physical() == physical) {
+                    if ((info.target() == target) && (info.physical() == physical)) {
                         attack(unit.getId(), target, physical, Math.max(0, Math.min(ov, info.maxOv())),
                               rearPick(game, engine, unit, info));
                         aiDecisions++;
@@ -104,7 +133,7 @@ public class ASAIBot extends ASScriptedBot {
                     }
                 }
             }
-            logger.warn("The AI suggested an illegal attack {}; using the scripted bot's attack", r);
+            LOGGER.warn("The AI suggested an illegal attack {}; using the scripted bot's attack", r);
         } catch (Exception ex) {
             warnOnce(ex);
         }
@@ -115,8 +144,8 @@ public class ASAIBot extends ASScriptedBot {
     private void warnOnce(Exception ex) {
         if (!warned) {
             warned = true;
-            logger.error(ex, "The AI is unavailable - " + getName() + " uses the scripted bot instead");
-            sendChat("The AI is not available (" + ex.getMessage() + ") - playing as the scripted bot.");
+            LOGGER.error(ex, "The AI is unavailable - {} uses the scripted bot instead", getName());
+            sendChat(ASMessages.getString("ASAIBot.unavailable", ex.getMessage()));
         }
     }
 
@@ -139,7 +168,7 @@ public class ASAIBot extends ASScriptedBot {
         ArrayNode units = msg.putArray("units");
         for (ASUnit u : game.getUnits()) {
             int side = sides.indexOf(game.sideOf(u));
-            if (side < 0 || side > 1) {
+            if ((side < 0) || (side > 1)) {
                 continue;
             }
             ObjectNode o = units.addObject();
@@ -152,10 +181,10 @@ public class ASAIBot extends ASScriptedBot {
             }
             o.putArray("dmg").add(u.baseDamage(0)).add(u.baseDamage(1)).add(u.baseDamage(2));
             ArrayNode st = o.putArray("state");
-            int pos = u.position == null ? -1 : b.index(u.position);
+            int pos = (u.position == null) ? -1 : b.index(u.position);
             for (int v : new int[] { pos, u.facing, u.armor, u.structure, u.moveIn, u.jumpIn, u.tmm, u.heat,
                   u.shutdown ? 1 : 0, u.engineHits, u.fcHits, u.mpHits, u.weaponHits, u.armUsed ? 1 : 0,
-                  u.destroyed || u.position == null ? 1 : 0, u.doomed ? 1 : 0, u.moved ? 1 : 0, u.mode,
+                  (u.destroyed || (u.position == null)) ? 1 : 0, u.doomed ? 1 : 0, u.moved ? 1 : 0, u.mode,
                   u.acted ? 1 : 0, u.fired ? 1 : 0, u.ovUsed, u.incomingHeat, u.damageDealt, u.damageTaken,
                   u.kills }) {
                 st.add(v);
@@ -163,7 +192,7 @@ public class ASAIBot extends ASScriptedBot {
             List<Integer> crits = u.pendingCrits;
             st.add(Math.min(crits.size(), 4));
             for (int k = 0; k < 4; k++) {
-                st.add(k < crits.size() ? crits.get(k) : 0);
+                st.add((k < crits.size()) ? crits.get(k) : 0);
             }
         }
         // this turn's order of play (side per step) and which step we're at
@@ -180,7 +209,7 @@ public class ASAIBot extends ASScriptedBot {
             last = s;
         }
         // initiative winner: moves last; in combat the loser shoots first
-        int winner = phase == 0 ? last : (first < 0 ? 0 : 1 - first);
+        int winner = (phase == 0) ? last : ((first < 0) ? 0 : 1 - first);
         msg.put("init_winner", Math.max(0, winner));
         msg.put("move_step", Math.max(0, game.getTurnIndex()));
         msg.put("turn", Math.max(1, game.getCurrentRound()));

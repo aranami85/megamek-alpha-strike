@@ -1,11 +1,38 @@
 /*
  * Copyright (C) 2026 The MegaMek Team. All Rights Reserved.
  *
- * This file is part of MegaMek. MegaMek is free software: you can redistribute it and/or modify it under the terms of
- * the GNU General Public License (GPL), version 3 or (at your option) any later version.
+ * This file is part of MegaMek.
+ *
+ * MegaMek is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License (GPL),
+ * version 3 or (at your option) any later version,
+ * as published by the Free Software Foundation.
+ *
+ * MegaMek is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * A copy of the GPL should have been included with this project;
+ * if not, see <https://www.gnu.org/licenses/>.
+ *
+ * NOTICE: The MegaMek organization is a non-profit group of volunteers
+ * creating free software for the BattleTech community.
+ *
+ * MechWarrior, BattleMech, `Mech and AeroTech are registered trademarks
+ * of The Topps Company, Inc. All Rights Reserved.
+ *
+ * Catalyst Game Labs and the Catalyst Game Labs logo are trademarks of
+ * InMediaRes Productions, LLC.
+ *
+ * MechWarrior Copyright Microsoft Corporation. MegaMek was created under
+ * Microsoft's "Game Content Usage Rules"
+ * <https://www.xbox.com/en-US/developers/rules> and it is not endorsed by or
+ * affiliated with Microsoft.
  */
 package megamek.client.ui.clientGUI;
 
+import megamek.common.alphaStrike.ASMessages;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -70,7 +97,7 @@ import megamek.logging.MMLogger;
  */
 public class ASClientGUI extends AbstractClientGUI {
 
-    private static final MMLogger logger = MMLogger.create(ASClientGUI.class);
+    private static final MMLogger LOGGER = MMLogger.create(ASClientGUI.class);
 
     private final ASClient client;
     private final Game bvGame = new Game();
@@ -105,11 +132,13 @@ public class ASClientGUI extends AbstractClientGUI {
     // map overlays (remembered between games)
     private static final java.util.prefs.Preferences PREFS =
           java.util.prefs.Preferences.userNodeForPackage(ASClientGUI.class);
-    private final javax.swing.JCheckBox showEcm = new javax.swing.JCheckBox("ECM areas",
+    private final javax.swing.JCheckBox showEcm = new javax.swing.JCheckBox(msg("ASClientGUI.showEcm"),
           PREFS.getBoolean("as.showEcm", true));
-    private final javax.swing.JCheckBox showC3 = new javax.swing.JCheckBox("C3 links",
-          PREFS.getBoolean("as.showC3", true));          // why the clicked enemy can't be attacked (Combat Phase), or null
+    private final javax.swing.JCheckBox showC3 = new javax.swing.JCheckBox(msg("ASClientGUI.showC3"),
+          // why the clicked enemy can't be attacked (Combat Phase), or null
+          PREFS.getBoolean("as.showC3", true));
 
+    /** The Alpha Strike game window for this client. */
     public ASClientGUI(ASClient client, MegaMekController controller) {
         super(client);
         this.client = client;
@@ -133,7 +162,7 @@ public class ASClientGUI extends AbstractClientGUI {
     @Override
     public void initialize() {
         super.initialize();
-        frame.setTitle(client.getName() + " - MegaMek Alpha Strike");
+        frame.setTitle(msg("ASClientGUI.title", client.getName()));
         frame.setJMenuBar(menuBar);
         frame.getContentPane().setLayout(new BorderLayout());
         frame.getContentPane().add(clientGuiPanel, BorderLayout.CENTER);
@@ -145,7 +174,7 @@ public class ASClientGUI extends AbstractClientGUI {
             boardViewsContainer.updateMapTabs();
             bv.addBoardViewListener(new Clicks());
         } catch (Exception ex) {
-            logger.fatal(ex, "Could not create the board view");
+            LOGGER.fatal(ex, "Could not create the board view");
             die();
             return;
         }
@@ -171,10 +200,10 @@ public class ASClientGUI extends AbstractClientGUI {
         log.setEditable(false);
         chatView.setEditable(false);
         JPanel chatPanel = new JPanel(new BorderLayout());
-        chatPanel.setBorder(BorderFactory.createTitledBorder("Chat"));
+        chatPanel.setBorder(BorderFactory.createTitledBorder(msg("ASClientGUI.chat")));
         chatPanel.add(new JScrollPane(chatView), BorderLayout.CENTER);
         chatPanel.add(chatInput, BorderLayout.SOUTH);
-        chatInput.setToolTipText("Type and press Enter to chat");
+        chatInput.setToolTipText(msg("ASClientGUI.chatTip"));
         chatInput.addActionListener(e -> {
             String text = chatInput.getText().trim();
             if (!text.isEmpty()) {
@@ -203,7 +232,7 @@ public class ASClientGUI extends AbstractClientGUI {
         clientGuiPanel.add(bottom, BorderLayout.SOUTH);
         // top: overlay switches
         JPanel overlays = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 8, 0));
-        overlays.add(new javax.swing.JLabel("Show on map:"));
+        overlays.add(new javax.swing.JLabel(msg("ASClientGUI.showOnMap")));
         for (javax.swing.JCheckBox box : new javax.swing.JCheckBox[] { showEcm, showC3 }) {
             box.setFocusable(false);
             box.addActionListener(e -> {
@@ -213,9 +242,8 @@ public class ASClientGUI extends AbstractClientGUI {
             });
             overlays.add(box);
         }
-        showEcm.setToolTipText("Halo around units with ECM / Angel ECM (dashed) / light ECM: their 12\" (6 hex) "
-              + "jamming radius");
-        showC3.setToolTipText("Lines between units of a C3 network: solid = linked, red dashed = cut off");
+        showEcm.setToolTipText(msg("ASClientGUI.showEcmTip"));
+        showC3.setToolTipText(msg("ASClientGUI.showC3Tip"));
         clientGuiPanel.add(overlays, BorderLayout.NORTH);
 
         game().addGameListener(new GameListenerAdapter() {
@@ -238,7 +266,7 @@ public class ASClientGUI extends AbstractClientGUI {
                     }
                     refresh();
                     ASUnit sel = selected();
-                    if (myTurn() && sel != null && sel.position != null && bv != null) {
+                    if (myTurn() && (sel != null) && (sel.position != null) && (bv != null)) {
                         bv.centerOnHex(sel.position);   // bring the unit whose turn it is into view
                     }
                 });
@@ -302,18 +330,18 @@ public class ASClientGUI extends AbstractClientGUI {
     }
 
     private ASUnit selected() {
-        return selectedUnit < 0 ? null : game().getUnit(selectedUnit);
+        return (selectedUnit < 0) ? null : game().getUnit(selectedUnit);
     }
 
     private boolean iAmDone() {
         Player me = client.getLocalPlayer();
-        return me == null || me.isDone();
+        return (me == null) || me.isDone();
     }
 
     /** Deployment Phase: one of my units that I may still move around. */
     private boolean canPlace(ASUnit u) {
-        return u != null && game().getPhase().isDeployment() && !iAmDone() && u.alive()
-              && u.getOwnerId() == client.getLocalPlayerNumber() && u.position != null;
+        return (u != null) && game().getPhase().isDeployment() && !iAmDone() && u.alive()
+              && (u.getOwnerId() == client.getLocalPlayerNumber()) && (u.position != null);
     }
 
     private void placeAt(ASUnit u, Coords c, int facing) {
@@ -321,7 +349,7 @@ public class ASClientGUI extends AbstractClientGUI {
     }
 
     private boolean isEligible(ASUnit u) {
-        return u != null && myTurn() && game().getTurn() != null && game().getTurn().isValidEntity(u, game());
+        return (u != null) && myTurn() && (game().getTurn() != null) && game().getTurn().isValidEntity(u, game());
     }
 
     private void resetPlan() {
@@ -366,7 +394,7 @@ public class ASClientGUI extends AbstractClientGUI {
 
     private String playerName(int playerId) {
         Player p = game().getPlayer(playerId);
-        return p != null ? p.getName() : "?";
+        return (p != null) ? p.getName() : "?";
     }
 
     // --- drawing ----------------------------------------------------------------------------------
@@ -375,14 +403,14 @@ public class ASClientGUI extends AbstractClientGUI {
         if (bv == null) {
             return;
         }
-        if (game().getPhase().usesTurns() && myTurn() && selected() == null) {
+        if (game().getPhase().usesTurns() && myTurn() && (selected() == null)) {
             autoSelect();
         }
         updateSprites();
         updateSidePanel();
         updateButtons();
         if (unitList != null) {
-            unitList.update(game(), client.getLocalPlayerNumber(), viewedUnit >= 0 ? viewedUnit : selectedUnit);
+            unitList.update(game(), client.getLocalPlayerNumber(), (viewedUnit >= 0) ? viewedUnit : selectedUnit);
         }
     }
 
@@ -396,7 +424,7 @@ public class ASClientGUI extends AbstractClientGUI {
             line = "<span style='color:#909090'>" + safe + "</span>";
         } else {
             int colon = safe.indexOf(':');
-            line = colon > 0 ? "<b>" + safe.substring(0, colon) + ":</b>" + safe.substring(colon + 1) : safe;
+            line = (colon > 0) ? "<b>" + safe.substring(0, colon) + ":</b>" + safe.substring(colon + 1) : safe;
         }
         chatLines.add(line);
         while (chatLines.size() > 200) {
@@ -413,9 +441,10 @@ public class ASClientGUI extends AbstractClientGUI {
         ASUnit sel = selected();
         Map<Integer, String> targetTexts = new HashMap<>();
         GamePhase phase = game().getPhase();
-        if (sel != null && phase.isFiring() && isEligible(sel)) {
+        if ((sel != null) && phase.isFiring() && isEligible(sel)) {
             for (AttackInfo info : engine().attackOptions(sel)) {
-                String text = info.tn() + "+" + (info.physical() ? "P" : "") + (info.arc() == ASEngine.ARC_TURRET ? "T" : "");
+                String text = info.tn() + "+" + (info.physical() ? "P" : "") + ((info.arc() == ASEngine.ARC_TURRET)
+                      ? "T" : "");
                 targetTexts.merge(info.target(), text, (a, b) -> a + " " + b);
             }
             for (AttackInfo info : engine().rearOptions(sel)) {
@@ -434,14 +463,14 @@ public class ASClientGUI extends AbstractClientGUI {
                     }
                 }
                 Player owner = game().getPlayer(e.unit().getOwnerId());
-                Color c = owner != null ? owner.getColour().getColour() : Color.GRAY;
+                Color c = (owner != null) ? owner.getColour().getColour() : Color.GRAY;
                 currentSprites.add(new ASEcmSprite(bv, area, c, e.angel()));
             }
         }
         if (showC3.isSelected()) {
             for (ASEngine.C3Link link : overlayEngine.c3Links()) {
                 Player owner = game().getPlayer(link.a().getOwnerId());
-                Color c = owner != null ? owner.getColour().getColour().brighter() : Color.LIGHT_GRAY;
+                Color c = (owner != null) ? owner.getColour().getColour().brighter() : Color.LIGHT_GRAY;
                 currentSprites.add(new ASC3LinkSprite(bv, link.a().position, link.b().position, c, link.working()));
             }
         }
@@ -467,11 +496,11 @@ public class ASClientGUI extends AbstractClientGUI {
             }
         }
         // movement envelope
-        if (sel != null && phase.isMovement() && isEligible(sel)) {
+        if ((sel != null) && phase.isMovement() && isEligible(sel)) {
             Map<Coords, Color> colors = new HashMap<>();
             for (MoveOption m : engine().legalMoves(sel)) {
                 boolean isJump = m.mode() == ASUnit.JUMP;
-                if (isJump != jumpMode && m.mode() != ASUnit.STAND) {
+                if ((isJump != jumpMode) && (m.mode() != ASUnit.STAND)) {
                     continue;
                 }
                 Coords c = game().asBoard().coords(m.dest());
@@ -499,13 +528,13 @@ public class ASClientGUI extends AbstractClientGUI {
                 continue;
             }
             Player owner = game().getPlayer(u.getOwnerId());
-            boolean planned = (u.getId() == selectedUnit) && plannedDest != null;
+            boolean planned = (u.getId() == selectedUnit) && (plannedDest != null);
             ASUnitSprite s = new ASUnitSprite(bv, u, owner, u.position, u.facing, false);
-            s.setSelected(u.getId() == selectedUnit && !planned);
-            s.setViewed(u.getId() == viewedUnit && u.getId() != selectedUnit);
+            s.setSelected((u.getId() == selectedUnit) && !planned);
+            s.setViewed((u.getId() == viewedUnit) && (u.getId() != selectedUnit));
             s.setDone((phase.isMovement() && u.moved) || (phase.isFiring() && u.acted));
             if (targetTexts.containsKey(u.getId())) {
-                s.setTargetInfo(targetTexts.get(u.getId()), u.getId() == targetId || u.getId() == rearTargetId);
+                s.setTargetInfo(targetTexts.get(u.getId()), (u.getId() == targetId) || (u.getId() == rearTargetId));
             }
             currentSprites.add(s);
             if (planned) {
@@ -520,7 +549,7 @@ public class ASClientGUI extends AbstractClientGUI {
     }
 
     private void updateSidePanel() {
-        ASUnit sel = viewedUnit >= 0 ? game().getUnit(viewedUnit) : selected();
+        ASUnit sel = (viewedUnit >= 0) ? game().getUnit(viewedUnit) : selected();
         if (sel == null) {
             if (cardPanel.isVisible()) {
                 cardPanel.setVisible(false);
@@ -540,17 +569,14 @@ public class ASClientGUI extends AbstractClientGUI {
             cardPanel.setVisible(true);
             repaintAll();
         }
-        StringBuilder sb = new StringBuilder("<html><b>").append(sel.name).append("</b> (")
-              .append(playerName(sel.getOwnerId())).append(")<br>Armor ").append(sel.armor).append("/")
-              .append(sel.fullArmor).append(", structure ").append(sel.structure).append("/").append(sel.fullStructure)
-              .append(", heat ").append(sel.heat);
-        if (sel.engineHits + sel.fcHits + sel.mpHits + sel.weaponHits > 0) {
-            sb.append("<br>Crits: engine ").append(sel.engineHits).append(", fire control ").append(sel.fcHits)
-                  .append(", MP ").append(sel.mpHits).append(", weapons ").append(sel.weaponHits);
+        StringBuilder sb = new StringBuilder("<html>").append(msg("ASClientGUI.status.unit", sel.name,
+              playerName(sel.getOwnerId()), sel.armor, sel.fullArmor, sel.structure, sel.fullStructure, sel.heat));
+        if ((sel.engineHits + sel.fcHits + sel.mpHits + sel.weaponHits) > 0) {
+            sb.append("<br>").append(msg("ASClientGUI.status.crits", sel.engineHits, sel.fcHits, sel.mpHits,
+                  sel.weaponHits));
         }
-        sb.append("<br>Move ").append(sel.groundInches()).append("\"")
-              .append(sel.jumpIn > 0 ? " / jump " + sel.jumpIn + "\"" : "")
-              .append(", TMM ").append(sel.tmm);
+        sb.append("<br>").append(msg("ASClientGUI.status.move", sel.groundInches(),
+              (sel.jumpIn > 0) ? msg("ASClientGUI.status.jump", sel.jumpIn) : "", sel.tmm));
         String c3 = engine().c3Status(sel);
         if (!c3.isEmpty()) {
             sb.append("<br>").append(c3);
@@ -594,118 +620,133 @@ public class ASClientGUI extends AbstractClientGUI {
         GamePhase phase = game().getPhase();
         ASUnit sel = selected();
         boolean mine = myTurn();
-        String waiting = game().getTurn() != null ? "Waiting for " + playerName(game().getTurn().playerId()) : "";
+        String waiting = (game().getTurn() != null) ? msg("ASClientGUI.waitingFor",
+              playerName(game().getTurn().playerId())) : "";
         if (phase.isMovement()) {
             if (!mine) {
-                statusBar.setText("Movement - " + waiting);
+                statusBar.setText(msg("ASClientGUI.movementWaiting", waiting));
             } else if (sel == null) {
-                statusBar.setText("Movement - your turn: pick a unit to move");
+                statusBar.setText(msg("ASClientGUI.movementPick"));
             } else if (plannedDest == null) {
-                statusBar.setText("Your turn: click where " + sel.name + " should go ("
-                      + (jumpMode ? "jumping" : "lit hexes; outer ring = sprint") + ")");
+                statusBar.setText(msg(jumpMode ? "ASClientGUI.movementWhereJump" : "ASClientGUI.movementWhere",
+                      sel.name));
             } else {
-                statusBar.setText(sel.name + ": " + ASUnit.MODE_NAMES[plannedMode] + " to "
-                      + String.format("%02d%02d", plannedDest.getX() + 1, plannedDest.getY() + 1)
-                      + ", facing " + facingName(plannedFacing) + (plannedMode == ASUnit.SPRINT ? " (no attacks!)" : ""));
+                String sprintNote = (plannedMode == ASUnit.SPRINT) ? msg("ASClientGUI.noAttacks") : "";
+                statusBar.setText(msg("ASClientGUI.movementPlanned", sel.name, ASUnit.modeName(plannedMode),
+                      hexName(plannedDest), facingName(plannedFacing), sprintNote));
             }
-            button("Next unit", this::selectNext, mine);
-            boolean canJump = sel != null && sel.jumpIn > 0;
-            button(jumpMode ? "Jump: ON" : "Jump: off", () -> {
+            button(msg("ASClientGUI.button.nextUnit"), this::selectNext, mine);
+            boolean canJump = (sel != null) && (sel.jumpIn > 0);
+            button(msg(jumpMode ? "ASClientGUI.button.jumpOn" : "ASClientGUI.button.jumpOff"), () -> {
                 jumpMode = !jumpMode;
                 plannedDest = null;
                 refresh();
             }, mine && canJump);
-            button("Turn left", () -> turn(-1), mine && sel != null);
-            button("Turn right", () -> turn(1), mine && sel != null);
-            button("Stand still", this::planStand, mine && sel != null);
-            button("Move", this::sendMove, mine && sel != null && plannedDest != null);
+            button(msg("ASClientGUI.button.turnLeft"), () -> turn(-1), mine && (sel != null));
+            button(msg("ASClientGUI.button.turnRight"), () -> turn(1), mine && (sel != null));
+            button(msg("ASClientGUI.button.standStill"), this::planStand, mine && (sel != null));
+            button(msg("ASClientGUI.button.move"), this::sendMove, mine && (sel != null) && (plannedDest != null));
         } else if (phase.isFiring()) {
             AttackInfo info = chosenAttack();
-            AttackInfo rearInfo = (sel != null && rearTargetId >= 0) ? rearFor(sel, rearTargetId) : null;
+            AttackInfo rearInfo = ((sel != null) && (rearTargetId >= 0)) ? rearFor(sel, rearTargetId) : null;
             if (!mine) {
-                statusBar.setText("Combat - " + waiting);
+                statusBar.setText(msg("ASClientGUI.combatWaiting", waiting));
             } else if (sel == null) {
-                statusBar.setText("Combat - your turn: pick a unit");
-            } else if (info == null && rearInfo != null) {
+                statusBar.setText(msg("ASClientGUI.combatPick"));
+            } else if ((info == null) && (rearInfo != null)) {
                 statusBar.setText("<html>" + rearText(rearInfo) + "</html>");
-            } else if (info == null && targetNote != null) {
-                statusBar.setText("<html>" + sel.name + " can't attack that: <span style='color:#ff7070'>"
-                      + targetNote + "</span></html>");
+            } else if ((info == null) && (targetNote != null)) {
+                statusBar.setText(msg("ASClientGUI.cantAttack", sel.name, targetNote));
             } else if (info == null) {
-                statusBar.setText("Your turn: click a target for " + sel.name + " (number = roll needed on 2d6)");
+                statusBar.setText(msg("ASClientGUI.combatClickTarget", sel.name));
             } else {
-                ASUnit t = game().getUnit(info.target());
-                int cut = (rearInfo != null && !info.physical()) ? (int) rearInfo.damage() : 0;
-                String dmgText = info.damage() == 0.5 ? "0*" : String.valueOf((int) info.damage());
-                if (cut > 0) {
-                    dmgText = Math.max(0, (info.damage() >= 1 ? (int) info.damage() : 0) - cut) + " (-" + cut
-                          + " for the rear attack)";
-                }
-                statusBar.setText(sel.name + " → " + t.name + (info.arc() == ASEngine.ARC_TURRET ? " (turret)" : "")
-                      + ": needs " + info.tn() + "+ ("
-                      + Math.round(100 * ASRules.hitChance(info.tn())) + "%), damage "
-                      + dmgText
-                      + (overheat > 0 ? " +" + overheat + " OV" : "") + (info.rear() ? " +1 rear" : "")
-                      + (info.physical() ? " (physical)" : ""));
-                String why = engine().explainAttack(sel, t, info.physical());
-                int colon = why.indexOf(':');
-                statusBar.setText("<html>" + statusBar.getText() + " &nbsp;<span style='font-size:90%;font-weight:normal'>("
-                      + (colon >= 0 ? why.substring(colon + 1).trim() : why) + ")</span>"
-                      + (rearInfo != null ? "<br>" + rearText(rearInfo) : "") + "</html>");
+                statusBar.setText(attackText(sel, info, rearInfo));
             }
-            boolean hasPhysical = sel != null && targetId >= 0 && attackFor(sel, targetId, true) != null;
-            button("Next unit", this::selectNext, mine);
-            button(physical ? "Physical: ON" : "Physical: off", () -> {
+            boolean hasPhysical = (sel != null) && (targetId >= 0) && (attackFor(sel, targetId, true) != null);
+            button(msg("ASClientGUI.button.nextUnit"), this::selectNext, mine);
+            button(msg(physical ? "ASClientGUI.button.physicalOn" : "ASClientGUI.button.physicalOff"), () -> {
                 physical = !physical;
                 overheat = 0;
                 refresh();
             }, mine && hasPhysical);
-            int maxOv = info != null ? info.maxOv() : 0;
-            button("OV -", () -> {
+            int maxOv = (info != null) ? info.maxOv() : 0;
+            button(msg("ASClientGUI.button.ovMinus"), () -> {
                 overheat = Math.max(0, overheat - 1);
                 refresh();
-            }, mine && overheat > 0);
-            button("OV +", () -> {
+            }, mine && (overheat > 0));
+            button(msg("ASClientGUI.button.ovPlus"), () -> {
                 overheat = Math.min(maxOv, overheat + 1);
                 refresh();
-            }, mine && overheat < maxOv);
-            button("Hold fire", () -> sendAttack(true), mine && sel != null);
-            button("Fire", () -> sendAttack(false), mine && (info != null || rearInfo != null));
+            }, mine && (overheat < maxOv));
+            button(msg("ASClientGUI.button.holdFire"), () -> sendAttack(true), mine && (sel != null));
+            button(msg("ASClientGUI.button.fire"), () -> sendAttack(false), mine && ((info != null)
+                  || (rearInfo != null)));
         } else if (phase.isDeployment()) {
             boolean done = iAmDone();
             if (done) {
-                statusBar.setText("Deployment - waiting for the other players");
+                statusBar.setText(msg("ASClientGUI.deploymentWaiting"));
             } else if (!canPlace(sel)) {
-                statusBar.setText("Deployment: click one of your units, then a lit hex in your strip. Done when ready.");
+                statusBar.setText(msg("ASClientGUI.deploymentPick"));
             } else {
-                statusBar.setText("Deployment: " + sel.name + " at " + String.format("%02d%02d",
-                      sel.position.getX() + 1, sel.position.getY() + 1) + ", facing " + facingName(sel.facing)
-                      + " - click a lit hex to move it, or turn it");
+                statusBar.setText(msg("ASClientGUI.deploymentUnit", sel.name, hexName(sel.position),
+                      facingName(sel.facing)));
             }
-            button("Turn left", () -> placeAt(sel, sel.position, sel.facing - 1), canPlace(sel));
-            button("Turn right", () -> placeAt(sel, sel.position, sel.facing + 1), canPlace(sel));
-            button("Done", () -> {
+            button(msg("ASClientGUI.button.turnLeft"), () -> placeAt(sel, sel.position, sel.facing - 1), canPlace(sel));
+            button(msg("ASClientGUI.button.turnRight"), () -> placeAt(sel, sel.position, sel.facing + 1),
+                  canPlace(sel));
+            button(msg("ASClientGUI.button.done"), () -> {
                 client.sendDone(true);
                 selectedUnit = -1;
                 refresh();
             }, !done);
         } else if (phase.isReport() || phase.isVictory()) {
             Player me = client.getLocalPlayer();
-            statusBar.setText(phase.isVictory() ? "Game over - see the battle log" : "End of round "
-                  + game().getCurrentRound() + " - read the battle log, then click Done");
-            button("Done", () -> {
+            statusBar.setText(phase.isVictory() ? msg("ASClientGUI.gameOver")
+                  : msg("ASClientGUI.endOfRound", game().getCurrentRound()));
+            button(msg("ASClientGUI.button.done"), () -> {
                 client.sendDone(true);
                 refresh();
-            }, me != null && !me.isDone());
+            }, (me != null) && !me.isDone());
         } else {
-            statusBar.setText("Waiting for the server... (" + phase + ")");
+            statusBar.setText(msg("ASClientGUI.waitingForServer", phase));
         }
         buttonBar.revalidate();
         buttonBar.repaint();
     }
 
     private static String facingName(int f) {
-        return new String[] { "N", "NE", "SE", "S", "SW", "NW" }[Math.floorMod(f, 6)];
+        return msg("ASClientGUI.facing." + Math.floorMod(f, 6));
+    }
+
+    /** Hex label like MegaMek's ("0512"). */
+    private static String hexName(Coords c) {
+        return String.format("%02d%02d", c.getX() + 1, c.getY() + 1);
+    }
+
+    /** Text from the Alpha Strike messages.properties. */
+    private static String msg(String key, Object... args) {
+        return (args.length == 0) ? ASMessages.getString(key) : ASMessages.getString(key, args);
+    }
+
+    /** Status bar text for the chosen attack (and the rear attack, if one is chosen too). */
+    private String attackText(ASUnit sel, AttackInfo info, AttackInfo rearInfo) {
+        ASUnit t = game().getUnit(info.target());
+        int cut = ((rearInfo != null) && !info.physical()) ? (int) rearInfo.damage() : 0;
+        String dmgText = (info.damage() == 0.5) ? "0*" : String.valueOf((int) info.damage());
+        if (cut > 0) {
+            int left = Math.max(0, ((info.damage() >= 1) ? (int) info.damage() : 0) - cut);
+            dmgText = msg("ASClientGUI.damageAfterRear", left, cut);
+        }
+        String extras = ((overheat > 0) ? msg("ASClientGUI.extraOv", overheat) : "")
+              + (info.rear() ? msg("ASClientGUI.extraRear") : "")
+              + (info.physical() ? msg("ASClientGUI.extraPhysical") : "");
+        String why = engine().explainAttack(sel, t, info.physical());
+        int colon = why.indexOf(':');
+        String details = (colon >= 0) ? why.substring(colon + 1).trim() : why;
+        String main = msg("ASClientGUI.attack", sel.name, t.name,
+              (info.arc() == ASEngine.ARC_TURRET) ? msg("ASClientGUI.turretTag") : "", info.tn(),
+              Math.round(100 * ASRules.hitChance(info.tn())), dmgText, extras, details);
+        return "<html>" + main + ((rearInfo != null) ? "<br>" + rearText(rearInfo) : "") + "</html>";
     }
 
     // --- movement --------------------------------------------------------------------------------
@@ -729,7 +770,7 @@ public class ASClientGUI extends AbstractClientGUI {
         }
         plannedDest = sel.position;
         plannedMode = sel.immobile() ? ASUnit.IMMOBILE : ASUnit.STAND;
-        if (plannedFacing < 0 || plannedMode == ASUnit.IMMOBILE) {
+        if ((plannedFacing < 0) || (plannedMode == ASUnit.IMMOBILE)) {
             plannedFacing = sel.facing;
         }
         refresh();
@@ -744,7 +785,8 @@ public class ASClientGUI extends AbstractClientGUI {
               : new int[] { ASUnit.STAND, ASUnit.GROUND, ASUnit.MINIMUM, ASUnit.SPRINT };
         List<MoveOption> legal = engine().legalMoves(sel);
         for (int mode : preference) {
-            if (best < 0 && legal.stream().anyMatch(m -> m.dest() == dest && m.mode() == mode)) {
+            boolean reachable = legal.stream().anyMatch(m -> (m.dest() == dest) && (m.mode() == mode));
+            if ((best < 0) && reachable) {
                 best = mode;
             }
         }
@@ -757,18 +799,18 @@ public class ASClientGUI extends AbstractClientGUI {
         int nearest = -1;
         int nd = Integer.MAX_VALUE;
         for (ASUnit e : engine().enemies(sel)) {
-            if (e.position != null && b.distance(dest, b.index(e.position)) < nd) {
+            if ((e.position != null) && (b.distance(dest, b.index(e.position)) < nd)) {
                 nd = b.distance(dest, b.index(e.position));
                 nearest = b.index(e.position);
             }
         }
-        plannedFacing = (nearest >= 0 && nearest != dest) ? b.faceToward(dest, nearest) : sel.facing;
+        plannedFacing = ((nearest >= 0) && (nearest != dest)) ? b.faceToward(dest, nearest) : sel.facing;
         refresh();
     }
 
     private void sendMove() {
         ASUnit sel = selected();
-        if (sel == null || plannedDest == null) {
+        if ((sel == null) || (plannedDest == null)) {
             return;
         }
         client.moveUnit(sel.getId(), plannedDest.getX(), plannedDest.getY(), plannedMode, plannedFacing);
@@ -781,7 +823,7 @@ public class ASClientGUI extends AbstractClientGUI {
 
     private AttackInfo attackFor(ASUnit unit, int target, boolean phys) {
         for (AttackInfo info : engine().attackOptions(unit)) {
-            if (info.target() == target && info.physical() == phys) {
+            if ((info.target() == target) && (info.physical() == phys)) {
                 return info;
             }
         }
@@ -790,11 +832,11 @@ public class ASClientGUI extends AbstractClientGUI {
 
     private AttackInfo chosenAttack() {
         ASUnit sel = selected();
-        if (sel == null || targetId < 0) {
+        if ((sel == null) || (targetId < 0)) {
             return null;
         }
         AttackInfo info = attackFor(sel, targetId, physical);
-        if (info == null && !physical) {
+        if ((info == null) && !physical) {
             info = attackFor(sel, targetId, true);
             physical = info != null;
         }
@@ -807,12 +849,12 @@ public class ASClientGUI extends AbstractClientGUI {
             return;
         }
         AttackInfo info = chosenAttack();
-        AttackInfo rearInfo = rearTargetId >= 0 ? rearFor(sel, rearTargetId) : null;
-        if (holdFire || (info == null && rearInfo == null)) {
+        AttackInfo rearInfo = (rearTargetId >= 0) ? rearFor(sel, rearTargetId) : null;
+        if (holdFire || ((info == null) && (rearInfo == null))) {
             client.attack(sel.getId(), -1, false, 0);
         } else {
-            client.attack(sel.getId(), info == null ? -1 : info.target(), info != null && info.physical(),
-                  info == null ? 0 : Math.min(overheat, info.maxOv()), rearInfo == null ? -1 : rearInfo.target());
+            client.attack(sel.getId(), (info == null) ? -1 : info.target(), (info != null) && info.physical(),
+                  (info == null) ? 0 : Math.min(overheat, info.maxOv()), (rearInfo == null) ? -1 : rearInfo.target());
         }
         selectedUnit = -1;
         resetPlan();
@@ -824,7 +866,7 @@ public class ASClientGUI extends AbstractClientGUI {
     private class Clicks extends BoardViewListenerAdapter {
         @Override
         public void hexMoused(BoardViewEvent b) {
-            if (b.getType() != BoardViewEvent.BOARD_HEX_CLICKED || b.getButton() != MouseEvent.BUTTON1) {
+            if ((b.getType() != BoardViewEvent.BOARD_HEX_CLICKED) || (b.getButton() != MouseEvent.BUTTON1)) {
                 return;
             }
             Coords c = b.getCoords();
@@ -845,10 +887,10 @@ public class ASClientGUI extends AbstractClientGUI {
         GamePhase phase = game().getPhase();
         ASUnit sel = selected();
         if (phase.isDeployment()) {
-            if (here != null && canPlace(here) && (sel == null || here.getId() != sel.getId())) {
+            if ((here != null) && canPlace(here) && ((sel == null) || (here.getId() != sel.getId()))) {
                 selectedUnit = here.getId();
                 viewedUnit = -1;
-            } else if (canPlace(sel) && (here == null || here.getId() == sel.getId())
+            } else if (canPlace(sel) && ((here == null) || (here.getId() == sel.getId()))
                   && engine().canDeployAt(game().sideOf(sel), game().asBoard().index(c))) {
                 placeAt(sel, c, sel.facing);
             } else if (here != null) {
@@ -857,18 +899,19 @@ public class ASClientGUI extends AbstractClientGUI {
             refresh();
             return;
         }
-        if (here != null && isEligible(here) && (sel == null || here.getId() != sel.getId() || !phase.isMovement())) {
+        if ((here != null) && isEligible(here) && ((sel == null) || (here.getId() != sel.getId())
+              || !phase.isMovement())) {
             selectedUnit = here.getId();          // one of your units that may act now
             viewedUnit = -1;
             resetPlan();
             refresh();
             return;
         }
-        if (phase.isMovement() && isEligible(sel) && (here == null || here.getId() == sel.getId())) {
+        if (phase.isMovement() && isEligible(sel) && ((here == null) || (here.getId() == sel.getId()))) {
             planMoveTo(c);
             return;
         }
-        if (phase.isFiring() && isEligible(sel) && here != null && pickTarget(sel, here.getId())) {
+        if (phase.isFiring() && isEligible(sel) && (here != null) && pickTarget(sel, here.getId())) {
             viewedUnit = here.getId();            // (and show its card)
             refresh();
             return;
@@ -886,14 +929,14 @@ public class ASClientGUI extends AbstractClientGUI {
      * Returns false if no attack can reach it.
      */
     private boolean pickTarget(ASUnit sel, int id) {
-        boolean main = attackFor(sel, id, false) != null || attackFor(sel, id, true) != null;
+        boolean main = (attackFor(sel, id, false) != null) || (attackFor(sel, id, true) != null);
         boolean rear = rearFor(sel, id) != null;
         if (!main && !rear) {
             return false;
         }
         targetNote = null;
-        if (rear && (!main || targetId == id)) {
-            rearTargetId = (rearTargetId == id && !main) ? -1 : id;     // rear weapons (click again = off)
+        if (rear && (!main || (targetId == id))) {
+            rearTargetId = ((rearTargetId == id) && !main) ? -1 : id;     // rear weapons (click again = off)
             if (targetId == id) {
                 targetId = -1;
             }
@@ -919,15 +962,14 @@ public class ASClientGUI extends AbstractClientGUI {
 
     private String rearText(AttackInfo r) {
         ASUnit t = game().getUnit(r.target());
-        return "Rear weapons → " + t.name + ": needs " + r.tn() + "+ (" + Math.round(100 * ASRules.hitChance(r.tn()))
-              + "%), damage " + (r.damage() == 0.5 ? "0*" : String.valueOf((int) r.damage()))
-              + " <span style='font-size:90%;font-weight:normal'>(click it again to cancel)</span>";
+        return msg("ASClientGUI.rearAttack", t.name, r.tn(), Math.round(100 * ASRules.hitChance(r.tn())),
+              (r.damage() == 0.5) ? "0*" : String.valueOf((int) r.damage()));
     }
 
     /** Clicked an enemy that isn't a legal target: remember why, for the status bar. */
     private void noteWhyNot(ASUnit sel, ASUnit enemy) {
         targetNote = null;
-        if (game().getPhase().isFiring() && isEligible(sel) && game().sideOf(enemy) != game().sideOf(sel)) {
+        if (game().getPhase().isFiring() && isEligible(sel) && (game().sideOf(enemy) != game().sideOf(sel))) {
             targetId = -1;
             targetNote = engine().explainAttack(sel, enemy, false);
         }
@@ -972,21 +1014,18 @@ public class ASClientGUI extends AbstractClientGUI {
             StringBuilder sb = new StringBuilder();
             for (ASUnit u : game().getUnits()) {
                 if (c.equals(u.position)) {
-                    sb.append("<b>").append(u.name).append("</b> - ").append(playerName(u.getOwnerId()))
-                          .append("<br>").append(u.getElement().getASUnitType()).append(" SZ").append(u.size)
-                          .append(", skill ").append(u.skill).append(", ").append(u.pv).append(" PV")
-                          .append("<br>Armor ").append(u.armor).append("/").append(u.fullArmor)
-                          .append(", structure ").append(u.structure).append("/").append(u.fullStructure)
-                          .append(u.heat > 0 ? ", heat " + u.heat : "")
-                          .append("<br>Damage S/M/L: ").append(dmgText(u, 0)).append("/").append(dmgText(u, 1))
-                          .append("/").append(dmgText(u, 2)).append(u.ov > 0 ? ", OV " + u.ov : "")
-                          .append("<br>Move ").append(u.groundInches()).append("\"")
-                          .append(u.jumpIn > 0 ? " / " + u.jumpIn + "\"j" : "").append(", TMM ").append(u.tmm)
-                          .append(u.moved && game().getPhase().isMovement() ? "<br>(" + ASUnit.MODE_NAMES[u.mode]
-                                + " this turn)" : "")
-                          .append(u.destroyed ? "<br><b>DESTROYED</b>" : "")
-                          .append(u.doomed && !u.destroyed ? "<br><b style='color:red'>DESTROYED this turn</b>"
-                                + " (leaves the map in the End Phase)" : "")
+                    boolean movedNow = u.moved && game().getPhase().isMovement();
+                    sb.append(msg("ASClientGUI.tip.unit", u.name, playerName(u.getOwnerId()),
+                                u.getElement().getASUnitType(), u.size, u.skill, u.pv))
+                          .append(msg("ASClientGUI.tip.armor", u.armor, u.fullArmor, u.structure, u.fullStructure,
+                                (u.heat > 0) ? msg("ASClientGUI.tip.heat", u.heat) : ""))
+                          .append(msg("ASClientGUI.tip.damage", dmgText(u, 0), dmgText(u, 1), dmgText(u, 2),
+                                (u.ov > 0) ? msg("ASClientGUI.tip.ov", u.ov) : ""))
+                          .append(msg("ASClientGUI.tip.move", u.groundInches(),
+                                (u.jumpIn > 0) ? msg("ASClientGUI.tip.jump", u.jumpIn) : "", u.tmm))
+                          .append(movedNow ? msg("ASClientGUI.tip.thisTurn", ASUnit.modeName(u.mode)) : "")
+                          .append(u.destroyed ? msg("ASClientGUI.tip.destroyed") : "")
+                          .append((u.doomed && !u.destroyed) ? msg("ASClientGUI.tip.destroyedThisTurn") : "")
                           .append(specialsLine(u))
                           .append(attackLine(u)).append("<br>");
                 }
@@ -1003,22 +1042,22 @@ public class ASClientGUI extends AbstractClientGUI {
                 // (no specials)
             }
             String c3 = engine().c3Status(u);
-            return (sp.isBlank() ? "" : "<br>Specials: " + sp) + (c3.isEmpty() ? "" : "<br>" + c3);
+            return (sp.isBlank() ? "" : msg("ASClientGUI.tip.specials", sp)) + (c3.isEmpty() ? "" : "<br>" + c3);
         }
 
         /** In the Combat Phase: what the selected unit would need to hit this enemy, or why it can't. */
         private String attackLine(ASUnit u) {
             ASUnit sel = selected();
-            if (sel == null || !game().getPhase().isFiring() || !isEligible(sel)
-                  || game().sideOf(u) == game().sideOf(sel)) {
+            if ((sel == null) || !game().getPhase().isFiring() || !isEligible(sel)
+                  || (game().sideOf(u) == game().sideOf(sel))) {
                 return "";
             }
-            return "<br><i>" + sel.name + ": " + engine().explainAttack(sel, u, false) + "</i>";
+            return msg("ASClientGUI.tip.attack", sel.name, engine().explainAttack(sel, u, false));
         }
 
         private String dmgText(ASUnit u, int band) {
             double d = u.damageAt(band);
-            return d == 0.5 ? "0*" : String.valueOf((int) d);
+            return (d == 0.5) ? "0*" : String.valueOf((int) d);
         }
     }
 }

@@ -3,6 +3,16 @@ MegaMek Alpha Strike mode - change log
 Newest first. Rule page numbers are from Alpha Strike: Commander's Edition.
 
 
+0.6.1  (Nov 8, 2026) - code tidy-up (MegaMek coding style)
+----------------------------------------------------------
+- The code now follows MegaMek's coding style guide: MegaMek's full license header in every
+  file, explicit parentheses in conditions, JavaDoc on public methods, LOGGER naming and
+  templated log messages, lines no longer than 120 characters.
+- All text you see (window, dialogs, battle report) moved to messages.properties, so the mode
+  can be translated like the rest of MegaMek.
+- No changes to the rules or how the game plays.
+
+
 0.6.0  (Nov 8, 2026) - cleaner AI bot setup
 -------------------------------------------
 - The AI bots' code was reorganised: the AI program is found with -Das.engine and its trained

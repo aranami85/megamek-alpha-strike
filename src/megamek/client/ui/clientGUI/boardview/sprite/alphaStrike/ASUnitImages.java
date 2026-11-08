@@ -1,8 +1,34 @@
 /*
  * Copyright (C) 2026 The MegaMek Team. All Rights Reserved.
  *
- * This file is part of MegaMek. MegaMek is free software: you can redistribute it and/or modify it under the terms of
- * the GNU General Public License (GPL), version 3 or (at your option) any later version.
+ * This file is part of MegaMek.
+ *
+ * MegaMek is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License (GPL),
+ * version 3 or (at your option) any later version,
+ * as published by the Free Software Foundation.
+ *
+ * MegaMek is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * A copy of the GPL should have been included with this project;
+ * if not, see <https://www.gnu.org/licenses/>.
+ *
+ * NOTICE: The MegaMek organization is a non-profit group of volunteers
+ * creating free software for the BattleTech community.
+ *
+ * MechWarrior, BattleMech, `Mech and AeroTech are registered trademarks
+ * of The Topps Company, Inc. All Rights Reserved.
+ *
+ * Catalyst Game Labs and the Catalyst Game Labs logo are trademarks of
+ * InMediaRes Productions, LLC.
+ *
+ * MechWarrior Copyright Microsoft Corporation. MegaMek was created under
+ * Microsoft's "Game Content Usage Rules"
+ * <https://www.xbox.com/en-US/developers/rules> and it is not endorsed by or
+ * affiliated with Microsoft.
  */
 package megamek.client.ui.clientGUI.boardview.sprite.alphaStrike;
 
@@ -36,7 +62,7 @@ import megamek.logging.MMLogger;
  */
 public final class ASUnitImages {
 
-    private static final MMLogger logger = MMLogger.create(ASUnitImages.class);
+    private static final MMLogger LOGGER = MMLogger.create(ASUnitImages.class);
     private static final Map<String, BufferedImage> cache = new ConcurrentHashMap<>();
     private static final Image NONE = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
     private static final Map<String, Image> bases = new ConcurrentHashMap<>();
@@ -73,13 +99,13 @@ public final class ASUnitImages {
     private static Image baseImage(AlphaStrikeElement element) {
         Image cached = bases.get(element.getName());
         if (cached != null) {
-            return cached == NONE ? null : cached;
+            return (cached == NONE) ? null : cached;
         }
         Image img = null;
         try {
             MekTileset tileset = MMStaticDirectoryManager.getMekTileset();
             Entity standIn = standIn(element);
-            if (tileset != null && standIn != null) {
+            if ((tileset != null) && (standIn != null)) {
                 img = tileset.imageFor(standIn);
                 if (img != null) {
                     img = new ImageIcon(img).getImage();             // make sure it's fully loaded
@@ -89,9 +115,9 @@ public final class ASUnitImages {
                 }
             }
         } catch (Exception ex) {
-            logger.warn("No unit picture for {}: {}", element.getName(), ex.getMessage());
+            LOGGER.warn("No unit picture for {}: {}", element.getName(), ex.getMessage());
         }
-        bases.put(element.getName(), img == null ? NONE : img);
+        bases.put(element.getName(), (img == null) ? NONE : img);
         return img;
     }
 
@@ -147,7 +173,7 @@ public final class ASUnitImages {
         g.drawImage(base, (w - bw) / 2, (h - bh) / 2, null);
         g.dispose();
         BufferedImage camoImg = null;
-        if (camo != null && camo.getWidth(null) > 0) {
+        if ((camo != null) && (camo.getWidth(null) > 0)) {
             camoImg = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
             Graphics2D cg = camoImg.createGraphics();
             cg.drawImage(new ImageIcon(camo).getImage(), 0, 0, w, h, null);
@@ -161,7 +187,7 @@ public final class ASUnitImages {
                 int r = (p >> 16) & 0xff;
                 int gg = (p >> 8) & 0xff;
                 int b = p & 0xff;
-                if (a > 0 && r == gg && gg == b) {           // grey = paintable
+                if ((a > 0) && (r == gg) && (gg == b)) {           // grey = paintable
                     int c = (camoImg != null) ? camoImg.getRGB(x, y) : colour.getRGB();
                     int cr = (c >> 16) & 0xff;
                     int cgc = (c >> 8) & 0xff;

@@ -1,11 +1,38 @@
 /*
  * Copyright (C) 2026 The MegaMek Team. All Rights Reserved.
  *
- * This file is part of MegaMek. MegaMek is free software: you can redistribute it and/or modify it under the terms of
- * the GNU General Public License (GPL), version 3 or (at your option) any later version.
+ * This file is part of MegaMek.
+ *
+ * MegaMek is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License (GPL),
+ * version 3 or (at your option) any later version,
+ * as published by the Free Software Foundation.
+ *
+ * MegaMek is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * A copy of the GPL should have been included with this project;
+ * if not, see <https://www.gnu.org/licenses/>.
+ *
+ * NOTICE: The MegaMek organization is a non-profit group of volunteers
+ * creating free software for the BattleTech community.
+ *
+ * MechWarrior, BattleMech, `Mech and AeroTech are registered trademarks
+ * of The Topps Company, Inc. All Rights Reserved.
+ *
+ * Catalyst Game Labs and the Catalyst Game Labs logo are trademarks of
+ * InMediaRes Productions, LLC.
+ *
+ * MechWarrior Copyright Microsoft Corporation. MegaMek was created under
+ * Microsoft's "Game Content Usage Rules"
+ * <https://www.xbox.com/en-US/developers/rules> and it is not endorsed by or
+ * affiliated with Microsoft.
  */
 package megamek.client.ui.clientGUI;
 
+import megamek.common.alphaStrike.ASMessages;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -50,6 +77,7 @@ public class ASUnitListPanel extends JPanel {
     private GamePhase phase = GamePhase.UNKNOWN;
     private boolean updating;
 
+    /** The unit lists; onClick gets the id of a clicked unit. */
     public ASUnitListPanel(IntConsumer onClick) {
         super(new BorderLayout());
         this.onClick = onClick;
@@ -112,7 +140,7 @@ public class ASUnitListPanel extends JPanel {
             list.setCellRenderer(new Renderer());
             list.setAlignmentX(Component.LEFT_ALIGNMENT);
             list.addListSelectionListener(e -> {
-                if (!updating && !e.getValueIsAdjusting() && list.getSelectedValue() != null) {
+                if (!updating && !e.getValueIsAdjusting() && (list.getSelectedValue() != null)) {
                     onClick.accept(list.getSelectedValue().getId());
                 }
             });
@@ -121,7 +149,7 @@ public class ASUnitListPanel extends JPanel {
                 @Override
                 public void mouseClicked(java.awt.event.MouseEvent e) {
                     int i = list.locationToIndex(e.getPoint());
-                    if (i >= 0 && i == list.getSelectedIndex()) {
+                    if ((i >= 0) && (i == list.getSelectedIndex())) {
                         onClick.accept(list.getModel().getElementAt(i).getId());
                     }
                 }
@@ -137,7 +165,7 @@ public class ASUnitListPanel extends JPanel {
         StringBuilder names = new StringBuilder();
         Color colour = Color.GRAY;
         for (Player p : game.getPlayersList()) {
-            if (game.sideOfPlayer(p.getId()) == side && !p.isObserver()) {
+            if ((game.sideOfPlayer(p.getId()) == side) && !p.isObserver()) {
                 if (!names.isEmpty()) {
                     names.append(", ");
                 }
@@ -152,31 +180,31 @@ public class ASUnitListPanel extends JPanel {
             alive += (u.destroyed || u.doomed) ? 0 : 1;
         }
         String hex = String.format("#%02x%02x%02x", colour.getRed(), colour.getGreen(), colour.getBlue());
-        return "<html><span style='color:" + hex + "'>&#9632;</span> <b>" + game.sideName(side) + "</b>"
-              + (mine ? " (you)" : "") + "<br><small>" + names + " - " + alive + "/" + units.size() + " units, "
-              + pv + " PV</small></html>";
+        String you = mine ? ASMessages.getString("ASUnitListPanel.you") : "";
+        return ASMessages.getString("ASUnitListPanel.header", hex, game.sideName(side), you, names.toString(), alive,
+              units.size(), pv);
     }
 
     /** What the unit has done this phase: "to move", "moved (sprint)", "to fire", "fired", "held fire". */
     private String status(ASUnit u) {
         if (u.destroyed) {
-            return "<span style='color:#ff5050'>&#10006; destroyed</span>";
+            return ASMessages.getString("ASUnitListPanel.destroyed");
         }
         if (u.doomed) {                 // killed this turn: still on the map until the End Phase
-            return "<span style='color:#ff5050'>&#10006; destroyed"
-                  + (phase.isFiring() && !u.acted ? " (fires back)" : "") + "</span>";
+            return ASMessages.getString((phase.isFiring() && !u.acted) ? "ASUnitListPanel.destroyedFiresBack"
+                  : "ASUnitListPanel.destroyed");
         }
         if (phase.isMovement()) {
-            return u.moved ? "<span style='color:#9a9a9a'>&#10004; moved (" + ASUnit.MODE_NAMES[u.mode] + ")</span>"
-                  : "<span style='color:#2fa52f'>&#9679; to move</span>";
+            return u.moved ? ASMessages.getString("ASUnitListPanel.moved", ASUnit.modeName(u.mode))
+                  : ASMessages.getString("ASUnitListPanel.toMove");
         }
         if (phase.isFiring()) {
             if (u.acted) {
-                return "<span style='color:#9a9a9a'>&#10004; " + (u.fired ? "fired" : "held fire") + "</span>";
+                return ASMessages.getString(u.fired ? "ASUnitListPanel.fired" : "ASUnitListPanel.heldFire");
             }
-            return "<span style='color:#2fa52f'>&#9679; to attack</span>";
+            return ASMessages.getString("ASUnitListPanel.toAttack");
         }
-        return u.moved ? "<span style='color:#9a9a9a'>" + ASUnit.MODE_NAMES[u.mode] + "</span>" : "";
+        return u.moved ? ASMessages.getString("ASUnitListPanel.mode", ASUnit.modeName(u.mode)) : "";
     }
 
     private class Renderer extends DefaultListCellRenderer {
@@ -185,16 +213,17 @@ public class ASUnitListPanel extends JPanel {
               boolean cellHasFocus) {
             JLabel label = (JLabel) super.getListCellRendererComponent(list, "", index, isSelected, cellHasFocus);
             ASUnit u = (ASUnit) value;
-            Player owner = game == null ? null : game.getPlayer(u.getOwnerId());
+            Player owner = (game == null) ? null : game.getPlayer(u.getOwnerId());
             BufferedImage pic = ASUnitImages.imageFor(u, owner);
-            label.setIcon(pic == null ? null : new ImageIcon(pic.getScaledInstance(42, 36, Image.SCALE_SMOOTH)));
+            label.setIcon((pic == null) ? null : new ImageIcon(pic.getScaledInstance(42, 36, Image.SCALE_SMOOTH)));
             boolean dead = u.destroyed || u.doomed;
             boolean done = (phase.isMovement() && u.moved) || (phase.isFiring() && u.acted) || dead;
             String nameStyle = done ? " style='color:#8a8a8a'" : "";
+            String heat = (u.heat > 0) ? ASMessages.getString("ASUnitListPanel.heat", u.heat) : "";
+            String row = ASMessages.getString("ASUnitListPanel.row", u.armor, u.fullArmor, u.structure,
+                  u.fullStructure, heat, u.pv);
             label.setText("<html><b" + nameStyle + ">" + (dead ? "<s>" + u.name + "</s>" : u.name)
-                  + "</b><br><small>A " + u.armor + "/" + u.fullArmor + " &nbsp;S " + u.structure + "/"
-                  + u.fullStructure + (u.heat > 0 ? " &nbsp;<span style='color:#ff6060'>H" + u.heat + "</span>" : "")
-                  + " &nbsp;" + u.pv + " PV<br>" + status(u) + "</small></html>");
+                  + "</b><br><small>" + row + "<br>" + status(u) + "</small></html>");
             label.setBorder(BorderFactory.createEmptyBorder(3, 4, 3, 4));
             label.setIconTextGap(6);
             return label;

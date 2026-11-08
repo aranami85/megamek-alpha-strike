@@ -1,11 +1,38 @@
 /*
  * Copyright (C) 2026 The MegaMek Team. All Rights Reserved.
  *
- * This file is part of MegaMek. MegaMek is free software: you can redistribute it and/or modify it under the terms of
- * the GNU General Public License (GPL), version 3 or (at your option) any later version.
+ * This file is part of MegaMek.
+ *
+ * MegaMek is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License (GPL),
+ * version 3 or (at your option) any later version,
+ * as published by the Free Software Foundation.
+ *
+ * MegaMek is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * A copy of the GPL should have been included with this project;
+ * if not, see <https://www.gnu.org/licenses/>.
+ *
+ * NOTICE: The MegaMek organization is a non-profit group of volunteers
+ * creating free software for the BattleTech community.
+ *
+ * MechWarrior, BattleMech, `Mech and AeroTech are registered trademarks
+ * of The Topps Company, Inc. All Rights Reserved.
+ *
+ * Catalyst Game Labs and the Catalyst Game Labs logo are trademarks of
+ * InMediaRes Productions, LLC.
+ *
+ * MechWarrior Copyright Microsoft Corporation. MegaMek was created under
+ * Microsoft's "Game Content Usage Rules"
+ * <https://www.xbox.com/en-US/developers/rules> and it is not endorsed by or
+ * affiliated with Microsoft.
  */
 package megamek.common.alphaStrike.play;
 
+import megamek.common.alphaStrike.ASMessages;
 import static megamek.common.alphaStrike.play.ASUnit.*;
 
 import java.util.ArrayList;
@@ -44,6 +71,7 @@ public class ASEngine {
     /** One place a unit can end its move. */
     public record MoveOption(int dest, int mode, int cost) {}
 
+    /** An engine working on this game, with this die (a supplier of 1-6 rolls, so tests can fix the rolls). */
     public ASEngine(ASGame game, IntSupplier d6) {
         this.game = game;
         this.d6 = d6;
@@ -57,17 +85,19 @@ public class ASEngine {
         return game.getRules();
     }
 
+    /** Rolls two dice. */
     public int roll2d6() {
         return d6.getAsInt() + d6.getAsInt();
     }
 
     // --- units ---------------------------------------------------------------------------------
 
+    /** All units still alive on the other side. */
     public List<ASUnit> enemies(ASUnit unit) {
         List<ASUnit> out = new ArrayList<>();
         int side = game.sideOf(unit);
         for (ASUnit u : game.getUnits()) {
-            if (u.alive() && game.sideOf(u) != side) {
+            if (u.alive() && (game.sideOf(u) != side)) {
                 out.add(u);
             }
         }
@@ -76,7 +106,7 @@ public class ASEngine {
 
     private ASUnit occupantAt(int hex) {
         for (ASUnit u : game.getUnits()) {
-            if (u.alive() && u.position != null && board().index(u.position) == hex) {
+            if (u.alive() && (u.position != null) && (board().index(u.position) == hex)) {
                 return u;
             }
         }
@@ -90,7 +120,7 @@ public class ASEngine {
     private Map<Integer, ASUnit> occupancy() {
         Map<Integer, ASUnit> occ = new LinkedHashMap<>();
         for (ASUnit u : game.getUnits()) {
-            if (u.alive() && u.position != null) {
+            if (u.alive() && (u.position != null)) {
                 occ.put(board().index(u.position), u);
             }
         }
@@ -124,7 +154,7 @@ public class ASEngine {
                 }
             }
             best.put(pos, 0);
-            PriorityQueue<int[]> frontier = new PriorityQueue<>((x, y) -> x[0] != y[0] ? Integer.compare(x[0], y[0])
+            PriorityQueue<int[]> frontier = new PriorityQueue<>((x, y) -> (x[0] != y[0]) ? Integer.compare(x[0], y[0])
                   : Integer.compare(x[1], y[1]));
             frontier.add(new int[] { 0, pos });
             while (!frontier.isEmpty()) {
@@ -136,7 +166,7 @@ public class ASEngine {
                 }
                 for (int dir = 0; dir < 6; dir++) {
                     int nxt = b.neighbor(here, dir);
-                    if (nxt < 0 || enemyHex[nxt]) {
+                    if ((nxt < 0) || enemyHex[nxt]) {
                         continue;
                     }
                     Integer step = b.enterCost(here, nxt, r);
@@ -144,7 +174,7 @@ public class ASEngine {
                         continue;
                     }
                     int total = cost + step;
-                    if (total <= sprintMp && total < best.getOrDefault(nxt, 1 << 30)) {
+                    if ((total <= sprintMp) && (total < best.getOrDefault(nxt, 1 << 30))) {
                         best.put(nxt, total);
                         frontier.add(new int[] { total, nxt });
                     }
@@ -152,33 +182,33 @@ public class ASEngine {
             }
             for (Map.Entry<Integer, Integer> e : best.entrySet()) {
                 int dest = e.getKey();
-                if (dest != pos && !occupied(dest, occ)) {
-                    out.add(new MoveOption(dest, e.getValue() <= mp ? GROUND : SPRINT, e.getValue()));
+                if ((dest != pos) && !occupied(dest, occ)) {
+                    out.add(new MoveOption(dest, (e.getValue() <= mp) ? GROUND : SPRINT, e.getValue()));
                 }
             }
             // Minimum movement: a mobile unit can always move 2" (1 hex) [p. 32]
             for (int dir = 0; dir < 6; dir++) {
                 int nxt = b.neighbor(pos, dir);
-                if (nxt < 0 || occupied(nxt, occ)) {
+                if ((nxt < 0) || occupied(nxt, occ)) {
                     continue;
                 }
-                boolean isGround = best.containsKey(nxt) && best.get(nxt) <= mp;
-                if (!isGround && b.enterCost(pos, nxt, r) != null) {
+                boolean isGround = best.containsKey(nxt) && (best.get(nxt) <= mp);
+                if (!isGround && (b.enterCost(pos, nxt, r) != null)) {
                     out.add(new MoveOption(nxt, MINIMUM, 1));
                 }
             }
         }
         int jump = r.toHexes(unit.jumpIn);
-        if (jump > 0 && b.waterDepth(pos) == 0) {          // can't jump out of water [p. 38]
+        if ((jump > 0) && (b.waterDepth(pos) == 0)) {          // can't jump out of water [p. 38]
             int ceiling = b.floor(pos) + Math.floorDiv(unit.jumpIn, 2);
             for (int dest : b.within(pos, jump)) {
-                if (dest == pos || occupied(dest, occ) || !b.passable(dest)) {
+                if ((dest == pos) || occupied(dest, occ) || !b.passable(dest)) {
                     continue;
                 }
                 int[] line = b.firstLine(pos, dest);
                 boolean clear = true;
                 for (int k = 1; k < line.length - 1; k++) {
-                    if (line[k] >= 0 && b.terrainTop(line[k]) > ceiling) {
+                    if ((line[k] >= 0) && (b.terrainTop(line[k]) > ceiling)) {
                         clear = false;
                         break;
                     }
@@ -193,9 +223,10 @@ public class ASEngine {
 
     /** Is this a legal move for the unit? (mode must match one of the legal options for that hex) */
     public boolean isLegalMove(ASUnit unit, int dest, int mode) {
-        return legalMoves(unit).stream().anyMatch(m -> m.dest() == dest && m.mode() == mode);
+        return legalMoves(unit).stream().anyMatch(m -> (m.dest() == dest) && (m.mode() == mode));
     }
 
+    /** Moves a unit (the move must be legal, see legalMoves): position, movement mode and facing. */
     public void applyMove(ASUnit unit, int dest, int mode, int facing) {
         unit.position = board().coords(dest);
         unit.mode = mode;
@@ -227,7 +258,7 @@ public class ASEngine {
 
     private AttackInfo attackCore(ASUnit att, int aPos, int aMode, int aFacing, ASUnit tgt, int tPos, int tMode,
           int tFacing, boolean physical, boolean rearWeapons) {
-        if (att.shutdown || aMode == SPRINT || aPos == tPos) {
+        if (att.shutdown || (aMode == SPRINT) || (aPos == tPos)) {
             return null;
         }
         ASBoard b = board();
@@ -253,7 +284,7 @@ public class ASEngine {
         double damage;
         if (physical) {
             int reach = att.has(F_MEL) ? 2 : 1;
-            if (dist != 1 || Math.abs(b.floor(aPos) - b.floor(tPos)) > reach) {
+            if ((dist != 1) || (Math.abs(b.floor(aPos) - b.floor(tPos)) > reach)) {
                 return null;
             }
             band = -1;
@@ -279,7 +310,7 @@ public class ASEngine {
         int tn = att.skill;
         if (aMode == JUMP) {
             tn += r.attackerJumped;
-        } else if (aMode == STAND || aMode == IMMOBILE) {
+        } else if ((aMode == STAND) || (aMode == IMMOBILE)) {
             tn += r.attackerStoodStill;
         }
         tn += tgt.tmmNow(tMode, r);
@@ -302,7 +333,7 @@ public class ASEngine {
             return null;
         }
         boolean rear = b.inRearArc(tPos, tFacing, aPos);
-        int maxOv = (physical || arc == ARC_REAR) ? 0 : att.maxOv(band);
+        int maxOv = (physical || (arc == ARC_REAR)) ? 0 : att.maxOv(band);
         return new AttackInfo(tgt.getId(), physical, tn, band, damage, maxOv, rear, los.woods(), los.partial(), arc);
     }
 
@@ -312,27 +343,27 @@ public class ASEngine {
      */
     public String explainAttack(ASUnit att, ASUnit tgt, boolean physical) {
         if (tgt.doomed || tgt.destroyed) {
-            return tgt.name + " is already destroyed";
+            return ASMessages.getString("ASEngine.why.destroyed", tgt.name);
         }
-        if (att.position == null || tgt.position == null) {
-            return "not on the map";
+        if ((att.position == null) || (tgt.position == null)) {
+            return ASMessages.getString("ASEngine.why.notOnMap");
         }
         if (att.shutdown) {
-            return att.name + " is shut down";
+            return ASMessages.getString("ASEngine.why.shutDown", att.name);
         }
         if (att.mode == SPRINT) {
-            return att.name + " sprinted this turn (no attacks)";
+            return ASMessages.getString("ASEngine.why.sprinted", att.name);
         }
         ASBoard b = board();
         ASRules r = rules();
         int aPos = b.index(att.position);
         int tPos = b.index(tgt.position);
         int dist = b.distance(aPos, tPos);
-        if (physical && dist != 1) {
-            return "physical attacks need an adjacent target";
+        if (physical && (dist != 1)) {
+            return ASMessages.getString("ASEngine.why.notAdjacent");
         }
         if (dist > r.rangeBands[2]) {
-            return "out of range (" + dist + " hexes, long range ends at " + r.rangeBands[2] + ")";
+            return ASMessages.getString("ASEngine.why.outOfRange", dist, r.rangeBands[2]);
         }
         int arc = ARC_FRONT;
         if (ASBoard.angleOff(att.facing, b.bearing(aPos, tPos)) > 90.01) {
@@ -341,96 +372,104 @@ public class ASEngine {
             } else if (!physical && att.has(F_REAR)) {
                 arc = ARC_REAR;
             } else {
-                return "outside " + att.name + "'s front arc - turn to face it";
+                return ASMessages.getString("ASEngine.why.outsideArc", att.name);
             }
         }
         int band = physical ? -1 : r.rangeBand(dist);
-        double armDamage = band < 0 ? 0 : switch (arc) {
+        double armDamage = (band < 0) ? 0 : switch (arc) {
             case ARC_TURRET -> att.turretDamageAt(band);
             case ARC_REAR -> att.rearDamageAt(band);
             default -> att.damageAt(band);
         };
         String armName = switch (arc) {
-            case ARC_TURRET -> "turret";
-            case ARC_REAR -> "rear weapons";
+            case ARC_TURRET -> ASMessages.getString("ASEngine.turret");
+            case ARC_REAR -> ASMessages.getString("ASEngine.rearWeapons");
             default -> "";
         };
-        if (!physical && (band < 0 || armDamage <= 0)) {
-            return att.name + (armName.isEmpty() ? "" : "'s " + armName) + " has no damage at "
-                  + (band < 0 ? "that range" : BAND_NAMES[band] + " range");
+        if (!physical && ((band < 0) || (armDamage <= 0))) {
+            String where = (band < 0) ? ASMessages.getString("ASEngine.thatRange")
+                  : ASMessages.getString("ASEngine.rangeName", bandName(band));
+            return armName.isEmpty() ? ASMessages.getString("ASEngine.why.noDamage", att.name, where)
+                  : ASMessages.getString("ASEngine.why.noDamageArm", att.name, armName, where);
         }
         ASBoard.LOS los = b.los(aPos, tPos);
         if (los.blocked()) {
-            return "no line of sight (" + b.blockReason(aPos, tPos) + ")";
+            return ASMessages.getString("ASEngine.why.noLos", b.blockReason(aPos, tPos));
         }
         List<String> mods = new ArrayList<>();
         int tn = att.skill;
-        mods.add("skill " + att.skill);
-        if (att.mode == JUMP && r.attackerJumped != 0) {
+        mods.add(ASMessages.getString("ASEngine.mod.skill", att.skill));
+        if ((att.mode == JUMP) && (r.attackerJumped != 0)) {
             tn += r.attackerJumped;
-            mods.add("you jumped " + signed(r.attackerJumped));
-        } else if ((att.mode == STAND || att.mode == IMMOBILE) && r.attackerStoodStill != 0) {
+            mods.add(ASMessages.getString("ASEngine.mod.jumped", signed(r.attackerJumped)));
+        } else if (((att.mode == STAND) || (att.mode == IMMOBILE)) && (r.attackerStoodStill != 0)) {
             tn += r.attackerStoodStill;
-            mods.add("stood still " + signed(r.attackerStoodStill));
+            mods.add(ASMessages.getString("ASEngine.mod.stoodStill", signed(r.attackerStoodStill)));
         }
         int tmm = tgt.tmmNow(tgt.mode, r);
         tn += tmm;
-        mods.add("target TMM " + signed(tmm));
+        mods.add(ASMessages.getString("ASEngine.mod.tmm", signed(tmm)));
         if (los.woods()) {
             tn += r.woodsMod;
-            mods.add("woods " + signed(r.woodsMod));
+            mods.add(ASMessages.getString("ASEngine.mod.woods", signed(r.woodsMod)));
         }
         if (los.partial()) {
             tn += r.partialCoverMod;
-            mods.add("partial cover " + signed(r.partialCoverMod));
+            mods.add(ASMessages.getString("ASEngine.mod.partialCover", signed(r.partialCoverMod)));
         }
         if (!physical) {
             if (att.fcHits > 0) {
                 tn += r.fireControlMod * att.fcHits;
-                mods.add("fire control hits " + signed(r.fireControlMod * att.fcHits));
+                mods.add(ASMessages.getString("ASEngine.mod.fireControl", signed(r.fireControlMod * att.fcHits)));
             }
             if (att.heat > 0) {
                 tn += att.heat;
-                mods.add("heat " + signed(att.heat));
+                mods.add(ASMessages.getString("ASEngine.mod.heat", signed(att.heat)));
             }
             int modBand = c3Band(att, tPos, band);
             tn += r.rangeMods[modBand];
             if (modBand != band) {
-                mods.add(BAND_NAMES[modBand] + " range via C3 (" + c3Spotter(att, tPos, band).name + " spots) "
-                      + signed(r.rangeMods[modBand]));
+                String spotter = c3Spotter(att, tPos, band).name;
+                mods.add(ASMessages.getString("ASEngine.mod.rangeViaC3", bandName(modBand), spotter,
+                      signed(r.rangeMods[modBand])));
             } else {
-                mods.add(BAND_NAMES[band] + " range " + signed(r.rangeMods[band]));
+                mods.add(ASMessages.getString("ASEngine.mod.range", bandName(band), signed(r.rangeMods[band])));
             }
         } else if (Math.abs(b.floor(aPos) - b.floor(tPos)) > (att.has(F_MEL) ? 2 : 1)) {
-            return "too big a height difference for a physical attack";
+            return ASMessages.getString("ASEngine.why.heightDifference");
         }
         tn += specialMods(att, tgt, tgt.mode, physical, band, mods);
         if (arc == ARC_REAR) {
             tn += 1;
-            mods.add("rear weapons +1");
+            mods.add(ASMessages.getString("ASEngine.mod.rearWeapons"));
         } else if (arc == ARC_TURRET) {
-            mods.add("turret");
+            mods.add(ASMessages.getString("ASEngine.turret"));
         }
-        String text = "needs " + tn + "+: " + String.join(", ", mods);
-        return tn > 12 ? "can't hit - " + text + " (more than 12)" : text;
+        String text = ASMessages.getString("ASEngine.needs", tn, String.join(", ", mods));
+        return (tn > 12) ? ASMessages.getString("ASEngine.cantHit", text) : text;
     }
 
-    private static final String[] BAND_NAMES = { "short", "medium", "long" };
+    private static final String[] BAND_KEYS = { "ASEngine.band.short", "ASEngine.band.medium", "ASEngine.band.long" };
+
+    /** "short", "medium" or "long" for range band 0, 1 or 2. */
+    private static String bandName(int band) {
+        return ASMessages.getString(BAND_KEYS[band]);
+    }
 
     private static String signed(int v) {
-        return v >= 0 ? "+" + v : String.valueOf(v);
+        return (v >= 0) ? "+" + v : String.valueOf(v);
     }
 
     /** Every legal attack for a unit right now (combat phase). */
     public List<AttackInfo> attackOptions(ASUnit unit) {
         List<AttackInfo> out = new ArrayList<>();
-        if (unit.acted || unit.shutdown || !unit.alive() || unit.position == null) {
+        if (unit.acted || unit.shutdown || !unit.alive() || (unit.position == null)) {
             return out;
         }
         ASBoard b = board();
         int pos = b.index(unit.position);
         for (ASUnit t : enemies(unit)) {
-            if (t.position == null || t.doomed) {
+            if ((t.position == null) || t.doomed) {
                 continue;                       // (a unit destroyed this turn is no target any more)
             }
             for (boolean physical : new boolean[] { false, true }) {
@@ -447,13 +486,13 @@ public class ASEngine {
     /** Every legal REAR-weapons attack for a unit right now (targets outside its front arc). */
     public List<AttackInfo> rearOptions(ASUnit unit) {
         List<AttackInfo> out = new ArrayList<>();
-        if (unit.acted || unit.shutdown || !unit.alive() || unit.position == null || !unit.has(F_REAR)) {
+        if (unit.acted || unit.shutdown || !unit.alive() || (unit.position == null) || !unit.has(F_REAR)) {
             return out;
         }
         ASBoard b = board();
         int pos = b.index(unit.position);
         for (ASUnit t : enemies(unit)) {
-            if (t.position != null && !t.doomed) {
+            if ((t.position != null) && !t.doomed) {
                 AttackInfo info = checkRearAttack(unit, pos, unit.mode, unit.facing, t, b.index(t.position), t.mode,
                       t.facing);
                 if (info != null) {
@@ -464,6 +503,7 @@ public class ASEngine {
         return out;
     }
 
+    /** Makes a unit's normal attack (target -1 = none); see the other applyAttack for rear weapons. */
     public List<String> applyAttack(ASUnit unit, int targetId, boolean physical, int ov) {
         return applyAttack(unit, targetId, physical, ov, -1);
     }
@@ -474,16 +514,16 @@ public class ASEngine {
         unit.acted = true;
         ASBoard b = board();
         AttackInfo rearInfo = null;
-        ASUnit rearTgt = rearTargetId >= 0 ? game.getUnit(rearTargetId) : null;
-        if (rearTgt != null && rearTgt.alive() && !rearTgt.doomed && game.sideOf(rearTgt) != game.sideOf(unit)) {
+        ASUnit rearTgt = (rearTargetId >= 0) ? game.getUnit(rearTargetId) : null;
+        if ((rearTgt != null) && rearTgt.alive() && !rearTgt.doomed && (game.sideOf(rearTgt) != game.sideOf(unit))) {
             rearInfo = checkRearAttack(unit, b.index(unit.position), unit.mode, unit.facing, rearTgt,
                   b.index(rearTgt.position), rearTgt.mode, rearTgt.facing);
         }
-        if (rearTargetId >= 0 && rearInfo == null) {
-            report.add(unit.name + " has no legal rear-weapons attack on that target.");
+        if ((rearTargetId >= 0) && (rearInfo == null)) {
+            report.add(ASMessages.getString("ASEngine.report.noRearAttack", unit.name));
         }
-        if (targetId < 0 && rearInfo == null) {
-            report.add(unit.name + " holds fire.");
+        if ((targetId < 0) && (rearInfo == null)) {
+            report.add(ASMessages.getString("ASEngine.report.holdsFire", unit.name));
             return report;
         }
         // REAR first: every point it can deal comes off the forward (or turret) attack [p. 79]
@@ -491,26 +531,27 @@ public class ASEngine {
         if (rearInfo != null) {
             reduction = (int) rearInfo.damage();
             unit.fired = true;
-            resolve(unit, rearTgt, rearInfo, 0, rearInfo.damage(), "rear weapons", report);
+            resolve(unit, rearTgt, rearInfo, 0, rearInfo.damage(), ASMessages.getString("ASEngine.rearWeapons"),
+                  report);
         }
         if (targetId < 0) {
             return report;
         }
         ASUnit tgt = game.getUnit(targetId);
         AttackInfo info = null;
-        if (tgt != null && tgt.alive() && !tgt.doomed && game.sideOf(tgt) != game.sideOf(unit)) {
+        if ((tgt != null) && tgt.alive() && !tgt.doomed && (game.sideOf(tgt) != game.sideOf(unit))) {
             info = checkAttack(unit, b.index(unit.position), unit.mode, unit.facing, tgt, b.index(tgt.position),
                   tgt.mode, tgt.facing, physical);
         }
         if (info == null) {
-            report.add(unit.name + " has no legal attack on that target.");
+            report.add(ASMessages.getString("ASEngine.report.noAttack", unit.name));
             return report;
         }
         double base = info.damage();
-        if (!physical && reduction > 0) {
-            base = Math.max(0, (base >= 1 ? (int) base : 0) - reduction);
+        if (!physical && (reduction > 0)) {
+            base = Math.max(0, ((base >= 1) ? (int) base : 0) - reduction);
             if (base <= 0) {
-                report.add(unit.name + " has no damage left for " + tgt.name + " after its rear attack.");
+                report.add(ASMessages.getString("ASEngine.report.noDamageLeft", unit.name, tgt.name));
                 return report;
             }
         }
@@ -519,7 +560,8 @@ public class ASEngine {
             unit.fired = true;
             unit.ovUsed = ov;
         }
-        String how = physical ? "physical attack" : (info.arc() == ARC_TURRET ? "turret" : "");
+        String how = physical ? ASMessages.getString("ASEngine.physicalAttack") : ((info.arc() == ARC_TURRET)
+              ? ASMessages.getString("ASEngine.turret") : "");
         resolve(unit, tgt, info, ov, base, how, report);
         return report;
     }
@@ -530,16 +572,19 @@ public class ASEngine {
         boolean physical = info.physical();
         int roll = roll2d6();
         boolean hit = roll >= info.tn();
-        String kind = physical ? "physical attack" : ("SML".charAt(info.band()) + " range"
-              + (how.isEmpty() ? "" : ", " + how));
-        report.add(unit.name + " attacks " + tgt.name + " (" + kind + ", needs " + info.tn()
-              + (ov > 0 ? ", overheat " + ov : "") + "): rolls " + roll + " - " + (hit ? "HIT" : "miss"));
+        String kind = physical ? ASMessages.getString("ASEngine.physicalAttack")
+              : ASMessages.getString("ASEngine.report.bandShort", "SML".charAt(info.band())) + (how.isEmpty() ? ""
+              : ", " + how);
+        String overheatText = (ov > 0) ? ASMessages.getString("ASEngine.report.overheat", ov) : "";
+        String result = ASMessages.getString(hit ? "ASEngine.report.hit" : "ASEngine.report.miss");
+        report.add(ASMessages.getString("ASEngine.report.attack", unit.name, tgt.name, kind, info.tn(), overheatText,
+              roll, result));
         if (!hit) {
             return;
         }
         double dmg = baseDamage;
         if (dmg == 0.5) {                       // 0* = 1 point on a 4+ [p. 48]
-            dmg = d6.getAsInt() >= 4 ? 1 : 0;
+            dmg = (d6.getAsInt() >= 4) ? 1 : 0;
         }
         int damage = (int) dmg;
         if (damage > 0) {
@@ -547,26 +592,27 @@ public class ASEngine {
             if (info.rear()) {
                 damage += rules().rearDamageBonus;
             }
-            if (physical && ((unit.has(F_TSM) && unit.heat >= 1) || unit.has(F_ITSM))) {
+            if (physical && ((unit.has(F_TSM) && (unit.heat >= 1)) || unit.has(F_ITSM))) {
                 damage += 1;                     // TSM (running hot) / industrial TSM [pp. 78-79]
-                report.add("  +1 damage from " + (unit.has(F_ITSM) ? "industrial TSM" : "TSM"));
+                report.add(ASMessages.getString(unit.has(F_ITSM) ? "ASEngine.report.itsmDamage"
+                      : "ASEngine.report.tsmDamage"));
             }
             boolean fromFront = !board().inRearArc(board().index(tgt.position), tgt.facing,
                   board().index(unit.position));
-            if (!physical && tgt.has(F_AMS) && unit.has(F_MISSILE) && (fromFront || tgt.has(F_TUR)) && damage > 1) {
+            if (!physical && tgt.has(F_AMS) && unit.has(F_MISSILE) && (fromFront || tgt.has(F_TUR)) && (damage > 1)) {
                 damage -= 1;                     // AMS: -1 (to a minimum of 1) vs missile units, front arc [p. 76]
-                report.add("  " + tgt.name + "'s AMS stops 1 point");
+                report.add(ASMessages.getString("ASEngine.report.ams", tgt.name));
             }
             if (tgt.has(F_SHLD)) {
                 damage -= 1;                     // shield: -1 (to a minimum of 0) [p. 76]
-                report.add("  " + tgt.name + "'s shield stops 1 point");
+                report.add(ASMessages.getString("ASEngine.report.shield", tgt.name));
             }
         }
         damage(tgt, damage, unit, roll == 12, true, report);
-        if (!physical && info.arc() == ARC_FRONT) {         // HT only with the normal attack
+        if (!physical && (info.arc() == ARC_FRONT)) {         // HT only with the normal attack
             int heat = unit.heatAt(info.band());
-            if (heat != 0 && tgt.has(F_FR)) {
-                report.add("  " + tgt.name + " is fire resistant: no heat");
+            if ((heat != 0) && tgt.has(F_FR)) {
+                report.add(ASMessages.getString("ASEngine.report.fireResistant", tgt.name));
             } else if (heat != 0) {
                 tgt.incomingHeat += heat;
             }
@@ -575,13 +621,14 @@ public class ASEngine {
 
     // --- damage and crits [pp. 48-50] ---------------------------------------------------------------
 
+    /** Deals damage to a unit (armor first, then structure), with critical hit chances and destruction. */
     public void damage(ASUnit tgt, int amount, ASUnit source, boolean natural12, boolean canCrit,
           List<String> report) {
         if (amount <= 0) {
             return;
         }
         if (natural12 && canCrit) {
-            report.add("  natural 12!");
+            report.add(ASMessages.getString("ASEngine.report.natural12"));
             critical(tgt, report);
         }
         int toArmor = Math.min(tgt.armor, amount);
@@ -593,14 +640,14 @@ public class ASEngine {
         if (source != null) {
             source.damageDealt += toArmor + toStruct;
         }
-        report.add("  " + tgt.name + " takes " + amount + ": armor " + tgt.armor + ", structure " + tgt.structure);
-        if (leftOver > 0 || (toStruct > 0 && tgt.structure <= 0)) {
+        report.add(ASMessages.getString("ASEngine.report.takes", tgt.name, amount, tgt.armor, tgt.structure));
+        if ((leftOver > 0) || ((toStruct > 0) && (tgt.structure <= 0))) {
             if (!tgt.doomed) {
                 tgt.doomed = true;
                 if (source != null) {
                     source.kills++;
                 }
-                report.add("  " + tgt.name + " is DESTROYED");
+                report.add(ASMessages.getString("ASEngine.report.destroyed", tgt.name));
             }
             return;
         }
@@ -617,13 +664,14 @@ public class ASEngine {
         }
     }
 
+    /** Rolls on the critical hit table for a unit; the effect waits for the End Phase. */
     public void critical(ASUnit tgt, List<String> report) {
         if (tgt.doomed) {
             return;
         }
         if (tgt.has(F_ARM) && !tgt.armUsed) {
             tgt.armUsed = true;
-            report.add("  " + tgt.name + "'s armored components stop a critical hit");
+            report.add(ASMessages.getString("ASEngine.report.armoredComponents", tgt.name));
             return;
         }
         int roll = roll2d6();
@@ -642,9 +690,10 @@ public class ASEngine {
         };
         if (effect != 0) {
             tgt.pendingCrits.add(effect);
-            String[] names = { "", "ammo hit", "engine hit", "fire control hit", "weapon hit", "MP hit", "destroyed" };
-            report.add("  critical hit on " + tgt.name + " (rolled " + rolled + (rolled != roll ? " -2 CR" : "") + "): "
-                  + names[effect]);
+            String[] names = { "", "ammo", "engine", "fireControl", "weapon", "mp", "destroyed" };
+            report.add(ASMessages.getString("ASEngine.report.critical", tgt.name, rolled,
+                  (rolled != roll) ? ASMessages.getString("ASEngine.report.criticalResistant") : "",
+                  ASMessages.getString("ASEngine.crit." + names[effect])));
         }
     }
 
@@ -666,30 +715,30 @@ public class ASEngine {
                         continue;
                     }
                     u.doomed = true;
-                    report.add("  " + u.name + "'s ammunition explodes!");
+                    report.add(ASMessages.getString("ASEngine.report.ammoExplodes", u.name));
                 }
                 case C_ENGINE -> {
                     u.engineHits++;
                     if (u.engineHits >= 2) {
                         u.doomed = true;
-                        report.add("  " + u.name + "'s engine is destroyed");
+                        report.add(ASMessages.getString("ASEngine.report.engineDestroyed", u.name));
                     }
                 }
                 case C_FC -> u.fcHits++;
                 case C_WEAPON -> {
-                    if (u.damageAt(0) <= 0 && u.damageAt(1) <= 0 && u.damageAt(2) <= 0) {
+                    if ((u.damageAt(0) <= 0) && (u.damageAt(1) <= 0) && (u.damageAt(2) <= 0)) {
                         damage(u, 1, null, false, false, report);
                     } else {
                         u.weaponHits++;
                     }
                 }
                 case C_MP -> {
-                    if (u.moveIn <= 0 && u.jumpIn <= 0) {
+                    if ((u.moveIn <= 0) && (u.jumpIn <= 0)) {
                         damage(u, 1, null, false, false, report);
                     } else {
                         u.mpHits++;
                         u.moveIn = halve(u.moveIn, 2);
-                        u.jumpIn = u.jumpIn != 0 ? halve(u.jumpIn, 2) : 0;
+                        u.jumpIn = (u.jumpIn != 0) ? halve(u.jumpIn, 2) : 0;
                         u.tmm = halve(u.tmm, 1);
                     }
                 }
@@ -709,9 +758,9 @@ public class ASEngine {
             a = roll2d6();
             bRoll = roll2d6();
         } while (a == bRoll);
-        int winner = a > bRoll ? sideA : sideB;
-        report.add("Initiative: " + game.sideName(sideA) + " " + a + ", " + game.sideName(sideB) + " " + bRoll
-              + " - " + game.sideName(winner) + " wins (moves last, shoots last)");
+        int winner = (a > bRoll) ? sideA : sideB;
+        report.add(ASMessages.getString("ASEngine.report.initiative", game.sideName(sideA), a, game.sideName(sideB),
+              bRoll, game.sideName(winner)));
         return winner;
     }
 
@@ -721,12 +770,12 @@ public class ASEngine {
         left.put(loser, game.aliveCount(loser));
         left.put(winner, game.aliveCount(winner));
         List<Integer> order = new ArrayList<>();
-        while (left.get(loser) > 0 || left.get(winner) > 0) {
+        while ((left.get(loser) > 0) || (left.get(winner) > 0)) {
             Map<Integer, Integer> counts = new LinkedHashMap<>();
             for (int s : new int[] { loser, winner }) {
-                int other = left.get(s == loser ? winner : loser);
+                int other = left.get((s == loser) ? winner : loser);
                 int mine = left.get(s);
-                int c = other == 0 ? mine : (mine >= 2 * other ? mine / other : 1);
+                int c = (other == 0) ? mine : ((mine >= 2 * other) ? mine / other : 1);
                 counts.put(s, Math.min(c, mine));
             }
             for (int s : new int[] { loser, winner }) {
@@ -751,6 +800,7 @@ public class ASEngine {
         return order;
     }
 
+    /** Clears what every unit did last turn (moved, attacked, overheat...) at the start of a round. */
     public void startTurn() {
         for (ASUnit u : game.getUnits()) {
             if (u.alive()) {
@@ -774,15 +824,15 @@ public class ASEngine {
         for (ASUnit u : game.getUnits()) {
             if (u.alive() && u.doomed) {
                 u.destroyed = true;
-                report.add(u.name + " is removed from the battlefield.");
+                report.add(ASMessages.getString("ASEngine.report.removed", u.name));
             }
         }
         for (ASUnit u : game.getUnits()) {
-            if (!u.alive() || u.position == null) {
+            if (!u.alive() || (u.position == null)) {
                 continue;
             }
             boolean wasShutdown = u.shutdown;
-            int heat = u.heat + u.ovUsed + ((u.fired && u.engineHits != 0) ? 1 : 0);
+            int heat = u.heat + u.ovUsed + ((u.fired && (u.engineHits != 0)) ? 1 : 0);
             if (board().waterDepth(board().index(u.position)) >= 1) {
                 heat -= 1;
             }
@@ -792,13 +842,13 @@ public class ASEngine {
             if (wasShutdown) {
                 heat = 0;
                 u.shutdown = false;
-                report.add(u.name + " restarts.");
+                report.add(ASMessages.getString("ASEngine.report.restarts", u.name));
             }
             heat += Math.min(u.incomingHeat, r.maxHtHeatPerTurn);
             u.heat = Math.max(0, Math.min(heat, r.shutdownHeat));
             if (u.heat >= r.shutdownHeat) {
                 u.shutdown = true;
-                report.add(u.name + " overheats and SHUTS DOWN.");
+                report.add(ASMessages.getString("ASEngine.report.shutsDown", u.name));
             }
         }
         return report;
@@ -826,14 +876,14 @@ public class ASEngine {
         deployEdges.put(side, edge);
         List<Integer> spots = new ArrayList<>();
         for (int i = 0; i < b.n; i++) {
-            if (inStrip(edge, i) && b.passable(i) && occupantAt(i) == null) {
+            if (inStrip(edge, i) && b.passable(i) && (occupantAt(i) == null)) {
                 spots.add(i);
             }
         }
         java.util.Collections.shuffle(spots, rng);
         int center = (b.height / 2) * b.width + b.width / 2;
         for (ASUnit u : game.getUnits()) {
-            if (game.sideOf(u) != side || u.position != null || spots.isEmpty()) {
+            if ((game.sideOf(u) != side) || (u.position != null) || spots.isEmpty()) {
                 continue;
             }
             int pos = spots.remove(spots.size() - 1);
@@ -848,22 +898,23 @@ public class ASEngine {
     private int specialMods(ASUnit att, ASUnit tgt, int tMode, boolean physical, int band, List<String> mods) {
         int tn = 0;
         if (!physical) {
-            if (tgt.has(F_STL) && band >= 1) {
+            if (tgt.has(F_STL) && (band >= 1)) {
                 tn += band;                                  // stealth: +1 Medium, +2 Long
-                note(mods, "stealth +" + band);
+                note(mods, ASMessages.getString("ASEngine.mod.stealth", band));
             }
-            if ((tgt.has(F_MAS) || tgt.has(F_LMAS)) && (tMode == STAND || tMode == IMMOBILE)) {
+            if ((tgt.has(F_MAS) || tgt.has(F_LMAS)) && ((tMode == STAND) || (tMode == IMMOBILE))) {
                 int m = tgt.has(F_MAS) ? 3 : 2;              // mimetic armor on a unit that stood still
                 tn += m;
-                note(mods, (tgt.has(F_MAS) ? "mimetic armor +" : "light mimetic armor +") + m);
+                note(mods, ASMessages.getString(tgt.has(F_MAS) ? "ASEngine.mod.mimetic" : "ASEngine.mod.lightMimetic",
+                      m));
             }
             if (att.has(F_SHLD)) {
                 tn += 1;
-                note(mods, "your shield +1");
+                note(mods, ASMessages.getString("ASEngine.mod.shield"));
             }
         } else if (att.has(F_ITSM)) {
             tn += 2;
-            note(mods, "industrial TSM +2");
+            note(mods, ASMessages.getString("ASEngine.mod.itsm"));
         }
         return tn;
     }
@@ -893,13 +944,13 @@ public class ASEngine {
     }
 
     private static boolean active(ASUnit u) {
-        return u.alive() && !u.shutdown && u.position != null;
+        return u.alive() && !u.shutdown && (u.position != null);
     }
 
     private List<EcmBubble> findBubbles() {
         List<EcmBubble> out = new ArrayList<>();
         for (ASUnit u : game.getUnits()) {
-            if (u.ecmRange > 0 && active(u) && !u.has(F_STL)) {
+            if ((u.ecmRange > 0) && active(u) && !u.has(F_STL)) {
                 out.add(new EcmBubble(u, board().index(u.position), u.ecmRange, u.angelEcm, u.novaEcm));
             }
         }
@@ -909,10 +960,10 @@ public class ASEngine {
     /** Is this hex inside an enemy (of side) ECM bubble that jams this kind of C3? */
     private boolean jammedAt(List<EcmBubble> ecm, int side, int hex, int c3Type, boolean boosted) {
         for (EcmBubble e : ecm) {
-            if (game.sideOf(e.unit()) == side || board().distance(hex, e.center()) > e.radius()) {
+            if ((game.sideOf(e.unit()) == side) || (board().distance(hex, e.center()) > e.radius())) {
                 continue;
             }
-            if (c3Type == C3_NOVA ? e.nova() : (!boosted || e.angel())) {
+            if ((c3Type == C3_NOVA) ? e.nova() : (!boosted || e.angel())) {
                 return true;
             }
         }
@@ -922,7 +973,7 @@ public class ASEngine {
     /** Does the line between two hexes run into or through such a bubble? */
     private boolean jammedLine(List<EcmBubble> ecm, int side, int a, int b, int c3Type, boolean boosted) {
         for (int hex : board().line(a, b, 1.0)) {
-            if (hex >= 0 && jammedAt(ecm, side, hex, c3Type, boosted)) {
+            if ((hex >= 0) && jammedAt(ecm, side, hex, c3Type, boosted)) {
                 return true;
             }
         }
@@ -932,7 +983,7 @@ public class ASEngine {
     /** This unit is jammed where it stands (stealth units always are: they block their own emissions). */
     private boolean selfJammed(List<EcmBubble> ecm, ASUnit u) {
         // stealth works like a (standard) enemy ECM on itself: boosted C3 and Nova shrug that off
-        boolean stealthJam = u.has(F_STL) && u.c3Type != C3_NOVA && !u.c3Boosted;
+        boolean stealthJam = u.has(F_STL) && (u.c3Type != C3_NOVA) && !u.c3Boosted;
         return stealthJam || jammedAt(ecm, game.sideOf(u), board().index(u.position), u.c3Type, u.c3Boosted);
     }
 
@@ -941,7 +992,7 @@ public class ASEngine {
         long key = 17;
         for (ASUnit u : game.getUnits()) {
             key = key * 31 + u.getId();
-            key = key * 31 + (u.position == null ? -1 : board().index(u.position));
+            key = key * 31 + ((u.position == null) ? -1 : board().index(u.position));
             key = key * 31 + (active(u) ? 1 : 0) + (u.c3Net + 2) * 4L;
         }
         if (key == c3Key) {
@@ -952,19 +1003,19 @@ public class ASEngine {
         c3Cache = new java.util.HashMap<>();
         Map<Integer, List<ASUnit>> nets = new LinkedHashMap<>();
         for (ASUnit u : game.getUnits()) {
-            if (u.c3Net >= 0 && u.c3Type != C3_NONE) {
+            if ((u.c3Net >= 0) && (u.c3Type != C3_NONE)) {
                 nets.computeIfAbsent(u.c3Net, k -> new ArrayList<>()).add(u);
             }
         }
         for (List<ASUnit> net : nets.values()) {
-            boolean nonHierarchic = net.stream().anyMatch(u -> u.c3Type == C3_IMPROVED || u.c3Type == C3_NOVA);
+            boolean nonHierarchic = net.stream().anyMatch(u -> (u.c3Type == C3_IMPROVED) || (u.c3Type == C3_NOVA));
             if (nonHierarchic) {
                 List<ASUnit> able = net.stream().filter(u -> active(u) && !selfJammed(ecmCache, u)).toList();
                 for (ASUnit u : net) {
                     boolean ok = false;
                     if (able.contains(u)) {
                         for (ASUnit v : able) {
-                            if (v != u && !jammedLine(ecmCache, game.sideOf(u), board().index(u.position),
+                            if ((v != u) && !jammedLine(ecmCache, game.sideOf(u), board().index(u.position),
                                   board().index(v.position), u.c3Type, false)) {
                                 ok = true;
                                 break;
@@ -983,14 +1034,14 @@ public class ASEngine {
 
     /** Standard / boosted C3: connected if it isn't jammed and its line to a connected master isn't either. */
     private boolean linked(ASUnit u, int depth) {
-        if (depth > 12 || !active(u) || selfJammed(ecmCache, u)) {
+        if ((depth > 12) || !active(u) || selfJammed(ecmCache, u)) {
             return false;
         }
-        if (u.c3Parent < 0 || u.c3Parent == u.getId()) {
+        if ((u.c3Parent < 0) || (u.c3Parent == u.getId())) {
             return true;                                     // the network's master
         }
         ASUnit master = game.getUnit(u.c3Parent);
-        if (master == null || !linked(master, depth + 1)) {
+        if ((master == null) || !linked(master, depth + 1)) {
             return false;                                    // master gone / jammed: its whole branch goes down
         }
         boolean boosted = u.c3Boosted && master.c3Boosted;  // a link is only as tough as its weaker end
@@ -1006,22 +1057,22 @@ public class ASEngine {
 
     /** The working members of this unit's network (including itself), or nothing if it isn't connected. */
     public List<ASUnit> c3Partners(ASUnit u) {
-        if (u.c3Net < 0 || !c3Connected(u)) {
+        if ((u.c3Net < 0) || !c3Connected(u)) {
             return List.of();
         }
         List<ASUnit> out = new ArrayList<>();
         for (ASUnit v : game.getUnits()) {
-            if (v.c3Net == u.c3Net && c3Cache.getOrDefault(v.getId(), false)) {
+            if ((v.c3Net == u.c3Net) && c3Cache.getOrDefault(v.getId(), false)) {
                 out.add(v);
             }
         }
-        return out.size() >= 2 ? out : List.of();
+        return (out.size() >= 2) ? out : List.of();
     }
 
     /** The range band used for the to-hit roll: the closest network member that can see the target [p. 80]. */
     private int c3Band(ASUnit att, int tPos, int band) {
         ASUnit spotter = c3Spotter(att, tPos, band);
-        return spotter == null ? band : rules().rangeBand(board().distance(board().index(spotter.position), tPos));
+        return (spotter == null) ? band : rules().rangeBand(board().distance(board().index(spotter.position), tPos));
     }
 
     /** The network member (not the attacker) that gives a better range band than the attacker's own, or null. */
@@ -1034,7 +1085,7 @@ public class ASEngine {
             }
             int mPos = board().index(m.position);
             int mb = rules().rangeBand(board().distance(mPos, tPos));
-            if (mb >= 0 && mb < bestBand && !board().los(mPos, tPos).blocked()) {
+            if ((mb >= 0) && (mb < bestBand) && !board().los(mPos, tPos).blocked()) {
                 best = m;
                 bestBand = mb;
             }
@@ -1048,18 +1099,18 @@ public class ASEngine {
         List<C3Link> out = new ArrayList<>();
         Map<Integer, ASUnit> firstOfNet = new LinkedHashMap<>();
         for (ASUnit u : game.getUnits()) {
-            if (u.c3Net < 0 || u.c3Type == C3_NONE || u.position == null || !u.alive()) {
+            if ((u.c3Net < 0) || (u.c3Type == C3_NONE) || (u.position == null) || !u.alive()) {
                 continue;
             }
             boolean ok = c3Cache.getOrDefault(u.getId(), false);
-            if (u.c3Type == C3_IMPROVED || u.c3Type == C3_NOVA) {
+            if ((u.c3Type == C3_IMPROVED) || (u.c3Type == C3_NOVA)) {
                 ASUnit hub = firstOfNet.putIfAbsent(u.c3Net, u);
                 if (hub != null) {
                     out.add(new C3Link(hub, u, ok && c3Cache.getOrDefault(hub.getId(), false)));
                 }
-            } else if (u.c3Parent >= 0 && u.c3Parent != u.getId()) {
+            } else if ((u.c3Parent >= 0) && (u.c3Parent != u.getId())) {
                 ASUnit m = game.getUnit(u.c3Parent);
-                if (m != null && m.position != null && m.alive()) {
+                if ((m != null) && (m.position != null) && m.alive()) {
                     out.add(new C3Link(m, u, ok));
                 }
             }
@@ -1072,18 +1123,19 @@ public class ASEngine {
         if (u.c3Type == C3_NONE) {
             return "";
         }
-        String kind = C3_NAMES[u.c3Type] + (u.c3Boosted ? " (boosted)" : "");
+        String kind = c3Name(u.c3Type) + (u.c3Boosted ? ASMessages.getString("ASEngine.c3.boosted") : "");
         if (u.c3Net < 0) {
-            return kind + " - not in a network";
+            return ASMessages.getString("ASEngine.c3.noNetwork", kind);
         }
         List<ASUnit> partners = c3Partners(u);
         if (!partners.isEmpty()) {
-            return kind + " - linked (" + partners.size() + " units)";
+            return ASMessages.getString("ASEngine.c3.linked", kind, partners.size());
         }
-        if (u.has(F_STL) && u.c3Type != C3_NOVA && !u.c3Boosted) {
-            return kind + " - off (stealth jams its own electronics)";
+        if (u.has(F_STL) && (u.c3Type != C3_NOVA) && !u.c3Boosted) {
+            return ASMessages.getString("ASEngine.c3.stealthOff", kind);
         }
-        return kind + " - cut off" + (active(u) ? " (enemy ECM or its master is down)" : "");
+        return active(u) ? ASMessages.getString("ASEngine.c3.cutOffEcm", kind)
+              : ASMessages.getString("ASEngine.c3.cutOff", kind);
     }
 
     /** Each side's deployment edge (0 N, 1 E, 2 S, 3 W), as used by deploy(). */
@@ -1110,12 +1162,12 @@ public class ASEngine {
             return e;
         }
         // (on a client: the strip that holds all of the side's units, as the server set them up)
-        int fallback = game.sides().indexOf(side) == 0 ? 3 : 1;
+        int fallback = (game.sides().indexOf(side) == 0) ? 3 : 1;
         for (int edge : new int[] { fallback, 3, 1, 0, 2 }) {
             boolean all = true;
             boolean any = false;
             for (ASUnit u : game.getUnits()) {
-                if (game.sideOf(u) == side && u.alive() && u.position != null) {
+                if ((game.sideOf(u) == side) && u.alive() && (u.position != null)) {
                     any = true;
                     all &= inStrip(edge, board().index(u.position));
                 }
@@ -1146,8 +1198,8 @@ public class ASEngine {
             return false;
         }
         ASUnit other = occupantAt(i);
-        if (other != null && other != unit) {
-            if (game.sideOf(other) != side || unit.position == null) {
+        if ((other != null) && (other != unit)) {
+            if ((game.sideOf(other) != side) || (unit.position == null)) {
                 return false;
             }
             other.position = unit.position;   // swap

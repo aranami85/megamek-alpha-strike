@@ -1,11 +1,38 @@
 /*
  * Copyright (C) 2026 The MegaMek Team. All Rights Reserved.
  *
- * This file is part of MegaMek. MegaMek is free software: you can redistribute it and/or modify it under the terms of
- * the GNU General Public License (GPL), version 3 or (at your option) any later version.
+ * This file is part of MegaMek.
+ *
+ * MegaMek is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License (GPL),
+ * version 3 or (at your option) any later version,
+ * as published by the Free Software Foundation.
+ *
+ * MegaMek is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * A copy of the GPL should have been included with this project;
+ * if not, see <https://www.gnu.org/licenses/>.
+ *
+ * NOTICE: The MegaMek organization is a non-profit group of volunteers
+ * creating free software for the BattleTech community.
+ *
+ * MechWarrior, BattleMech, `Mech and AeroTech are registered trademarks
+ * of The Topps Company, Inc. All Rights Reserved.
+ *
+ * Catalyst Game Labs and the Catalyst Game Labs logo are trademarks of
+ * InMediaRes Productions, LLC.
+ *
+ * MechWarrior Copyright Microsoft Corporation. MegaMek was created under
+ * Microsoft's "Game Content Usage Rules"
+ * <https://www.xbox.com/en-US/developers/rules> and it is not endorsed by or
+ * affiliated with Microsoft.
  */
 package megamek.common.alphaStrike.play;
 
+import megamek.common.alphaStrike.ASMessages;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -45,12 +72,10 @@ public final class ASLobbySupport {
     private static final Map<String, String> DEFAULT_NAMES = new ConcurrentHashMap<>();
 
     static {
-        BOT_LABELS.put(BOT_AI_V3, "AI v3 bot (look-ahead, strongest)");
-        BOT_LABELS.put(BOT_AI_NET, "AI v2.1 bot (network only, fast)");
-        BOT_LABELS.put(BOT_SCRIPTED, "Scripted bot (simple rules)");
-        SHORT_LABELS.put(BOT_AI_V3, "AI v3 bot");
-        SHORT_LABELS.put(BOT_AI_NET, "AI v2.1 bot");
-        SHORT_LABELS.put(BOT_SCRIPTED, "Scripted bot");
+        for (String type : new String[] { BOT_AI_V3, BOT_AI_NET, BOT_SCRIPTED }) {
+            BOT_LABELS.put(type, ASMessages.getString("ASLobbySupport.bot." + type));
+            SHORT_LABELS.put(type, ASMessages.getString("ASLobbySupport.botShort." + type));
+        }
         try {
             Class.forName("megamek.client.bot.alphaStrike.ASBots");    // loads add-on bot types, if any
         } catch (Throwable ignored) {
@@ -87,17 +112,19 @@ public final class ASLobbySupport {
         return botTypes.getOrDefault(botName, BOT_SCRIPTED);
     }
 
+    /** True if a bot type was chosen for this bot player. */
     public static boolean hasBotType(String botName) {
         return botTypes.containsKey(botName);
     }
 
+    /** The Add Bot dialog text for a bot type. */
     public static String botLabel(String type) {
         return BOT_LABELS.getOrDefault(type, type);
     }
 
     /** Short name for the lobby's player list. */
     public static String botShortLabel(String botName) {
-        return SHORT_LABELS.getOrDefault(botType(botName), "Scripted bot");
+        return SHORT_LABELS.getOrDefault(botType(botName), SHORT_LABELS.get(BOT_SCRIPTED));
     }
 
     private ASLobbySupport() {
@@ -118,13 +145,13 @@ public final class ASLobbySupport {
 
     /** The unit's Alpha Strike element (card) including its pilot skill, or null if it can't be converted. */
     public static synchronized AlphaStrikeElement element(Entity entity) {
-        if (entity == null || !ASConverter.canConvert(entity)) {
+        if ((entity == null) || !ASConverter.canConvert(entity)) {
             return null;
         }
-        int skillKey = entity.getCrew() == null ? -1
+        int skillKey = (entity.getCrew() == null) ? -1
               : entity.getCrew().getGunnery() * 100 + entity.getCrew().getPiloting();
         Cached c = cache.get(entity);
-        if (c != null && c.entity() == entity && c.skillKey() == skillKey) {
+        if ((c != null) && (c.entity() == entity) && (c.skillKey() == skillKey)) {
             return c.element();
         }
         try {
@@ -141,9 +168,10 @@ public final class ASLobbySupport {
     /** Point Value of the unit (with skill), 0 if it can't be converted. */
     public static int pv(Entity entity) {
         AlphaStrikeElement e = element(entity);
-        return e == null ? 0 : e.getPointValue();
+        return (e == null) ? 0 : e.getPointValue();
     }
 
+    /** The Alpha Strike point value of a lobby unit at its pilot skill (cached). */
     public static int pv(Collection<Entity> entities) {
         return entities.stream().mapToInt(ASLobbySupport::pv).sum();
     }

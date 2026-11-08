@@ -1,11 +1,38 @@
 /*
  * Copyright (C) 2026 The MegaMek Team. All Rights Reserved.
  *
- * This file is part of MegaMek. MegaMek is free software: you can redistribute it and/or modify it under the terms of
- * the GNU General Public License (GPL), version 3 or (at your option) any later version.
+ * This file is part of MegaMek.
+ *
+ * MegaMek is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License (GPL),
+ * version 3 or (at your option) any later version,
+ * as published by the Free Software Foundation.
+ *
+ * MegaMek is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * A copy of the GPL should have been included with this project;
+ * if not, see <https://www.gnu.org/licenses/>.
+ *
+ * NOTICE: The MegaMek organization is a non-profit group of volunteers
+ * creating free software for the BattleTech community.
+ *
+ * MechWarrior, BattleMech, `Mech and AeroTech are registered trademarks
+ * of The Topps Company, Inc. All Rights Reserved.
+ *
+ * Catalyst Game Labs and the Catalyst Game Labs logo are trademarks of
+ * InMediaRes Productions, LLC.
+ *
+ * MechWarrior Copyright Microsoft Corporation. MegaMek was created under
+ * Microsoft's "Game Content Usage Rules"
+ * <https://www.xbox.com/en-US/developers/rules> and it is not endorsed by or
+ * affiliated with Microsoft.
  */
 package megamek.server.alphaStrike;
 
+import megamek.common.alphaStrike.ASMessages;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,7 +65,7 @@ import megamek.common.interfaces.ReportEntry;
  */
 public class ASHostGameManager implements IGameManager {
 
-    private static final MMLogger logger = MMLogger.create(ASHostGameManager.class);
+    private static final MMLogger LOGGER = MMLogger.create(ASHostGameManager.class);
 
     private final LobbyManager lobby = new LobbyManager(this);
     private ASGameManager battle;
@@ -62,9 +89,10 @@ public class ASHostGameManager implements IGameManager {
     }
 
     private IGameManager current() {
-        return battle != null ? battle : lobby;
+        return (battle != null) ? battle : lobby;
     }
 
+    /** True once the lobby has been turned into the Alpha Strike battle. */
     public boolean inBattle() {
         return battle != null;
     }
@@ -81,7 +109,7 @@ public class ASHostGameManager implements IGameManager {
         int converted = 0;
         for (Entity entity : twGame.getEntitiesVector()) {
             if (!ASConverter.canConvert(entity)) {
-                notes.add(entity.getShortName() + " has no Alpha Strike card and was left out.");
+                notes.add(ASMessages.getString("ASHostGameManager.noCard", entity.getShortName()));
                 continue;
             }
             try {
@@ -91,8 +119,8 @@ public class ASHostGameManager implements IGameManager {
                 asGame.addUnit(new ASUnit(element));
                 converted++;
             } catch (Exception ex) {
-                logger.error(ex, "Could not convert " + entity.getShortName());
-                notes.add(entity.getShortName() + " could not be converted and was left out.");
+                LOGGER.error(ex, "Could not convert {}", entity.getShortName());
+                notes.add(ASMessages.getString("ASHostGameManager.notConverted", entity.getShortName()));
             }
         }
         copyC3Networks(twGame, asGame);
@@ -101,20 +129,22 @@ public class ASHostGameManager implements IGameManager {
             if (!ownsUnits) {
                 player.setObserver(true);
             }
-            player.setGhost(true);          // everyone reconnects with the Alpha Strike client and takes their player back
+            // everyone reconnects with the Alpha Strike client and takes their player back
+            player.setGhost(true);
             player.setDone(false);
         }
         if (asGame.sides().size() > 2) {
-            notes.add("Note: Alpha Strike mode supports two sides; put players on Team 1 and Team 2.");
+            notes.add(ASMessages.getString("ASHostGameManager.twoSides"));
         }
         asGame.setupTeams();
         asGame.setPhase(GamePhase.STARTING_SCENARIO);
         for (String note : notes) {
             lobby.sendServerChat(note);
         }
-        logger.info("Switching to Alpha Strike: {} units", converted);
+        LOGGER.info("Switching to Alpha Strike: {} units", converted);
         // tell the lobby clients to reopen as Alpha Strike clients (they still speak the lobby's protocol right now)
-        lobby.sendServerChat(ASLobbySupport.SWITCH_TAG + " " + converted + " units converted to Alpha Strike.");
+        lobby.sendServerChat(ASLobbySupport.SWITCH_TAG + " " + ASMessages.getString("ASHostGameManager.converted",
+              converted));
         ASGameManager asManager = new ASGameManager();
         asManager.setGame(asGame);
         battle = asManager;
@@ -146,8 +176,8 @@ public class ASHostGameManager implements IGameManager {
     public void sendCurrentInfo(int connId) {
         current().sendCurrentInfo(connId);
         if (battle == null) {
-            lobby.sendServerChat(connId, ASLobbySupport.LOBBY_TAG
-                  + " Units are shown with their Alpha Strike values; the battle is played with Alpha Strike rules.");
+            lobby.sendServerChat(connId, ASLobbySupport.LOBBY_TAG + " "
+                  + ASMessages.getString("ASHostGameManager.lobbyNote"));
         }
     }
 
@@ -219,12 +249,12 @@ public class ASHostGameManager implements IGameManager {
         java.util.Map<String, Integer> nhNets = new java.util.HashMap<>();
         for (ASUnit u : asGame.getUnits()) {
             Entity e = twGame.getEntity(u.getId());
-            if (e == null || u.c3Type == ASUnit.C3_NONE) {
+            if ((e == null) || (u.c3Type == ASUnit.C3_NONE)) {
                 continue;
             }
-            if (u.c3Type == ASUnit.C3_IMPROVED || u.c3Type == ASUnit.C3_NOVA) {
+            if ((u.c3Type == ASUnit.C3_IMPROVED) || (u.c3Type == ASUnit.C3_NOVA)) {
                 String net = e.getC3NetId();
-                long members = net == null ? 0 : twGame.getEntitiesVector().stream()
+                long members = (net == null) ? 0 : twGame.getEntitiesVector().stream()
                       .filter(o -> net.equals(o.getC3NetId())).count();
                 if (members >= 2) {
                     u.c3Net = nhNets.computeIfAbsent(net, k -> 100000 + nhNets.size());
@@ -236,15 +266,15 @@ public class ASHostGameManager implements IGameManager {
         }
         // network id = the top master of each chain; units with no master and no members stay out
         for (ASUnit u : asGame.getUnits()) {
-            if (u.c3Type != ASUnit.C3_MASTER && u.c3Type != ASUnit.C3_SLAVE) {
+            if ((u.c3Type != ASUnit.C3_MASTER) && (u.c3Type != ASUnit.C3_SLAVE)) {
                 continue;
             }
             ASUnit top = u;
-            for (int k = 0; k < 12 && top.c3Parent >= 0 && asGame.getUnit(top.c3Parent) != null; k++) {
+            for (int k = 0; (k < 12) && (top.c3Parent >= 0) && (asGame.getUnit(top.c3Parent) != null); k++) {
                 top = asGame.getUnit(top.c3Parent);
             }
             final ASUnit root = top;
-            boolean hasMembers = root != u || asGame.getUnits().stream().anyMatch(o -> o.c3Parent == root.getId());
+            boolean hasMembers = (root != u) || asGame.getUnits().stream().anyMatch(o -> o.c3Parent == root.getId());
             if (hasMembers) {
                 u.c3Net = root.getId();
             }

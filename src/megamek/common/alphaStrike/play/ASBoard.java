@@ -3,14 +3,36 @@
  *
  * This file is part of MegaMek.
  *
- * MegaMek is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License (GPL), version 3 or (at your option) any later version, as published by the Free Software Foundation.
+ * MegaMek is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License (GPL),
+ * version 3 or (at your option) any later version,
+ * as published by the Free Software Foundation.
  *
- * MegaMek is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ * MegaMek is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * A copy of the GPL should have been included with this project;
+ * if not, see <https://www.gnu.org/licenses/>.
+ *
+ * NOTICE: The MegaMek organization is a non-profit group of volunteers
+ * creating free software for the BattleTech community.
+ *
+ * MechWarrior, BattleMech, `Mech and AeroTech are registered trademarks
+ * of The Topps Company, Inc. All Rights Reserved.
+ *
+ * Catalyst Game Labs and the Catalyst Game Labs logo are trademarks of
+ * InMediaRes Productions, LLC.
+ *
+ * MechWarrior Copyright Microsoft Corporation. MegaMek was created under
+ * Microsoft's "Game Content Usage Rules"
+ * <https://www.xbox.com/en-US/developers/rules> and it is not endorsed by or
+ * affiliated with Microsoft.
  */
 package megamek.common.alphaStrike.play;
 
+import megamek.common.alphaStrike.ASMessages;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,6 +66,7 @@ public class ASBoard {
     private final int[] cubeR;
     private final byte[] losCache; // n*n, -1 = not worked out yet; else blocked*4 + woods*2 + partial
 
+    /** The board as Alpha Strike sees it (levels, woods, water, rough, buildings), read from a MegaMek board. */
     public ASBoard(Board board) {
         width = board.getWidth();
         height = board.getHeight();
@@ -88,30 +111,37 @@ public class ASBoard {
         return new int[] { elev[i], woods[i], water[i], rough[i] ? 1 : 0, building[i] };
     }
 
+    /** The hex index (y * width + x) of a position. */
     public int index(Coords c) {
         return c.getY() * width + c.getX();
     }
 
+    /** The position of a hex index. */
     public Coords coords(int i) {
         return new Coords(i % width, i / width);
     }
 
+    /** True if x/y is on the board. */
     public boolean contains(int x, int y) {
-        return x >= 0 && x < width && y >= 0 && y < height;
+        return (x >= 0) && (x < width) && (y >= 0) && (y < height);
     }
 
+    /** The level a unit stands on in this hex (ground level minus water depth). */
     public int floor(int i) {
         return elev[i] - water[i];
     }
 
+    /** The height of the solid things in this hex (ground plus buildings), for line of sight. */
     public int top(int i) {
         return elev[i] + building[i];
     }
 
+    /** True if ground units can enter this hex. */
     public boolean passable(int i) {
-        return building[i] == 0 && water[i] <= 1;
+        return (building[i] == 0) && (water[i] <= 1);
     }
 
+    /** Distance in hexes between two hexes. */
     public int distance(int a, int b) {
         int dq = Math.abs(cubeQ[a] - cubeQ[b]);
         int dr = Math.abs(cubeR[a] - cubeR[b]);
@@ -168,15 +198,16 @@ public class ASBoard {
 
     static double pyMod(double a, double b) {
         double r = a % b;
-        if (r != 0 && ((r < 0) != (b < 0))) {
+        if ((r != 0) && ((r < 0) != (b < 0))) {
             r += b;
         }
         return r;
     }
 
+    /** How far (in degrees) a bearing is from a facing; more than 90 means outside the front arc. */
     public static double angleOff(int facing, double bearing) {
         double d = pyMod(bearing - facing * 60, 360.0);
-        return d <= 180 ? d : 360 - d;
+        return (d <= 180) ? d : 360 - d;
     }
 
     /** Front arc = the forward half (180 degrees). */
@@ -189,6 +220,7 @@ public class ASBoard {
         return angleOff(facing, bearing(a, b)) >= 149.99;
     }
 
+    /** The facing (0-5) that points from one hex toward another. */
     public int faceToward(int a, int b) {
         return (int) Math.floorMod((long) Math.floor((bearing(a, b) + 30) / 60), 6L);
     }
@@ -222,7 +254,7 @@ public class ASBoard {
             double eq = Math.abs(rq - q);
             double er = Math.abs(rr - r);
             double es = Math.abs(rs - s);
-            if (eq > er && eq > es) {
+            if ((eq > er) && (eq > es)) {
                 rq = -rr - rs;
             } else if (er > es) {
                 rr = -rq - rs;
@@ -231,11 +263,11 @@ public class ASBoard {
             int ir = (int) rr;
             int y = ir + Math.floorDiv(iq - (iq & 1), 2);
             int i = contains(iq, y) ? y * width + iq : -1;
-            if (out[len - 1] != i || i < 0) {
+            if ((out[len - 1] != i) || (i < 0)) {
                 out[len++] = i;
             }
         }
-        return len == out.length ? out : java.util.Arrays.copyOf(out, len);
+        return (len == out.length) ? out : java.util.Arrays.copyOf(out, len);
     }
 
     /** The first of the two nudged lines from a to b (always worked out from the lower hex number). */
@@ -272,7 +304,7 @@ public class ASBoard {
         int aTop = floor(a) + height;
         int tFloor = floor(b);
         int tTop = tFloor + height;
-        if (water[a] >= 2 || water[b] >= 2) {
+        if ((water[a] >= 2) || (water[b] >= 2)) {
             return new LOS(true, false, false);
         }
         int nn = line.length - 1;
@@ -293,14 +325,14 @@ public class ASBoard {
             if (intervenes(solid, aTop, tTop, nextA, nextT)) {
                 return new LOS(true, false, false);
             }
-            if (woods[i] != 0 && intervenes(elev[i] + 2, aTop, tTop, nextA, nextT)) {
+            if ((woods[i] != 0) && intervenes(elev[i] + 2, aTop, tTop, nextA, nextT)) {
                 woodsCount++;
                 woodsMod = true;
                 if (woodsCount >= WOODS_BLOCK_AT) {
                     return new LOS(true, false, false);
                 }
             }
-            if (nextT && solid >= tFloor + 1 && aTop <= tTop) {
+            if (nextT && (solid >= tFloor + 1) && (aTop <= tTop)) {
                 partial = true;
             }
         }
@@ -326,8 +358,8 @@ public class ASBoard {
     }
 
     private String blockReasonOne(int a, int b, int[] line, int height) {
-        if (water[a] >= 2 || water[b] >= 2) {
-            return "a unit is under deep water";
+        if ((water[a] >= 2) || (water[b] >= 2)) {
+            return ASMessages.getString("ASBoard.los.deepWater");
         }
         int aTop = floor(a) + height;
         int tTop = floor(b) + height;
@@ -341,13 +373,13 @@ public class ASBoard {
             boolean nextA = k == 1;
             boolean nextT = k == nn - 1;
             if (intervenes(top(i), aTop, tTop, nextA, nextT)) {
-                return "hex " + name(i) + (building[i] > 0 ? " has a building" : " is higher ground")
-                      + " in the way";
+                return ASMessages.getString((building[i] > 0) ? "ASBoard.los.building" : "ASBoard.los.higherGround",
+                      name(i));
             }
-            if (woods[i] != 0 && intervenes(elev[i] + 2, aTop, tTop, nextA, nextT)) {
+            if ((woods[i] != 0) && intervenes(elev[i] + 2, aTop, tTop, nextA, nextT)) {
                 woodsHexes.add(name(i));
                 if (woodsHexes.size() >= WOODS_BLOCK_AT) {
-                    return WOODS_BLOCK_AT + " woods hexes in the way: " + String.join(", ", woodsHexes);
+                    return ASMessages.getString("ASBoard.los.woods", WOODS_BLOCK_AT, String.join(", ", woodsHexes));
                 }
             }
         }
@@ -359,7 +391,7 @@ public class ASBoard {
     }
 
     private static boolean intervenes(int level, int aTop, int tTop, boolean nextA, boolean nextT) {
-        return (level >= aTop && level >= tTop) || (nextA && level >= aTop) || (nextT && level >= tTop);
+        return ((level >= aTop) && (level >= tTop)) || (nextA && (level >= aTop)) || (nextT && (level >= tTop));
     }
 
     private static int score(LOS r) {
@@ -417,13 +449,14 @@ public class ASBoard {
 
     /** Height of the solid stuff (or woods) in a hex, for jumping over it. */
     public int terrainTop(int i) {
-        return Math.max(elev[i] + building[i], woods[i] != 0 ? elev[i] + 2 : elev[i]);
+        return Math.max(elev[i] + building[i], (woods[i] != 0) ? elev[i] + 2 : elev[i]);
     }
 
     public boolean isWoods(int i) {
         return woods[i] != 0;
     }
 
+    /** Water depth in this hex (0 = no water). */
     public int waterDepth(int i) {
         return water[i];
     }

@@ -1,11 +1,38 @@
 /*
  * Copyright (C) 2026 The MegaMek Team. All Rights Reserved.
  *
- * This file is part of MegaMek. MegaMek is free software: you can redistribute it and/or modify it under the terms of
- * the GNU General Public License (GPL), version 3 or (at your option) any later version.
+ * This file is part of MegaMek.
+ *
+ * MegaMek is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License (GPL),
+ * version 3 or (at your option) any later version,
+ * as published by the Free Software Foundation.
+ *
+ * MegaMek is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * A copy of the GPL should have been included with this project;
+ * if not, see <https://www.gnu.org/licenses/>.
+ *
+ * NOTICE: The MegaMek organization is a non-profit group of volunteers
+ * creating free software for the BattleTech community.
+ *
+ * MechWarrior, BattleMech, `Mech and AeroTech are registered trademarks
+ * of The Topps Company, Inc. All Rights Reserved.
+ *
+ * Catalyst Game Labs and the Catalyst Game Labs logo are trademarks of
+ * InMediaRes Productions, LLC.
+ *
+ * MechWarrior Copyright Microsoft Corporation. MegaMek was created under
+ * Microsoft's "Game Content Usage Rules"
+ * <https://www.xbox.com/en-US/developers/rules> and it is not endorsed by or
+ * affiliated with Microsoft.
  */
 package megamek.client.ui.dialogs;
 
+import megamek.common.alphaStrike.ASMessages;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
@@ -42,8 +69,9 @@ public class ASBotDialog extends JDialog {
     private String defaultBotName;
     private Collection<String> takenNames;
 
+    /** The Add Bot dialog; takenNames are names already used in the game. */
     public ASBotDialog(JFrame owner, String defaultName, int defaultTeam, Collection<String> takenNames) {
-        super(owner, "Add Alpha Strike Bot", true);
+        super(owner, ASMessages.getString("ASBotDialog.title"), true);
         JPanel form = new JPanel(new GridBagLayout());
         form.setBorder(BorderFactory.createEmptyBorder(12, 12, 6, 12));
         GridBagConstraints c = new GridBagConstraints();
@@ -52,7 +80,7 @@ public class ASBotDialog extends JDialog {
 
         c.gridx = 0;
         c.gridy = 0;
-        form.add(new JLabel("Name:"), c);
+        form.add(new JLabel(ASMessages.getString("ASBotDialog.name")), c);
         c.gridx = 1;
         nameField.setText(defaultName);
         form.add(nameField, c);
@@ -60,7 +88,7 @@ public class ASBotDialog extends JDialog {
         c.gridx = 0;
         c.gridy++;
         c.anchor = GridBagConstraints.NORTHWEST;
-        form.add(new JLabel("Played by:"), c);
+        form.add(new JLabel(ASMessages.getString("ASBotDialog.playedBy")), c);
         JPanel ais = new JPanel();
         ais.setLayout(new javax.swing.BoxLayout(ais, javax.swing.BoxLayout.Y_AXIS));
         ButtonGroup group = new ButtonGroup();
@@ -72,9 +100,10 @@ public class ASBotDialog extends JDialog {
             if (!ok && megamek.client.bot.alphaStrike.ASBots.isAddon(type)) {
                 continue;                     // an add-on that can't run here: don't even show it
             }
-            JRadioButton rb = new JRadioButton(entry.getValue() + (ok ? "" : "  - AI not found"));
+            JRadioButton rb = new JRadioButton(entry.getValue() + (ok ? ""
+                  : ASMessages.getString("ASBotDialog.aiNotFound")));
             rb.setEnabled(ok);
-            if (ok && firstEnabled == null) {
+            if (ok && (firstEnabled == null)) {
                 firstEnabled = rb;
             }
             rb.addActionListener(e -> suggestName(type));
@@ -95,7 +124,7 @@ public class ASBotDialog extends JDialog {
         c.gridx = 0;
         c.gridy++;
         c.anchor = GridBagConstraints.WEST;
-        form.add(new JLabel("Team:"), c);
+        form.add(new JLabel(ASMessages.getString("ASBotDialog.team")), c);
         for (int t = 1; t < Player.TEAM_NAMES.length; t++) {
             teamBox.addItem(Player.TEAM_NAMES[t]);
         }
@@ -106,17 +135,16 @@ public class ASBotDialog extends JDialog {
         c.gridx = 0;
         c.gridy++;
         c.gridwidth = 2;
-        form.add(new JLabel("<html><i>Alpha Strike mode plays two sides: put your units on one team and the bot on"
-              + " the other.</i></html>"), c);
+        form.add(new JLabel(ASMessages.getString("ASBotDialog.twoSides")), c);
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton ok = new JButton("OK");
-        JButton cancel = new JButton("Cancel");
+        JButton ok = new JButton(ASMessages.getString("ASBotDialog.ok"));
+        JButton cancel = new JButton(ASMessages.getString("ASBotDialog.cancel"));
         JLabel error = new JLabel(" ");
         ok.addActionListener(e -> {
             String name = getBotName();
             if (name.isEmpty() || takenNames.contains(name)) {
-                error.setText(name.isEmpty() ? "Please enter a name." : "That name is already taken.");
+                error.setText(ASMessages.getString(name.isEmpty() ? "ASBotDialog.noName" : "ASBotDialog.nameTaken"));
                 pack();
                 return;
             }
@@ -170,6 +198,7 @@ public class ASBotDialog extends JDialog {
         return teamBox.getSelectedIndex() + 1;
     }
 
+    /** The chosen bot type (see ASLobbySupport). */
     public String getBotType() {
         for (int k = 0; k < aiButtons.size(); k++) {
             if (aiButtons.get(k).isSelected()) {

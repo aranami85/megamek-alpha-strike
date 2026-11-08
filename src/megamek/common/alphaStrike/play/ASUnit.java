@@ -1,11 +1,38 @@
 /*
  * Copyright (C) 2026 The MegaMek Team. All Rights Reserved.
  *
- * This file is part of MegaMek. MegaMek is free software: you can redistribute it and/or modify it under the terms of
- * the GNU General Public License (GPL), version 3 or (at your option) any later version.
+ * This file is part of MegaMek.
+ *
+ * MegaMek is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License (GPL),
+ * version 3 or (at your option) any later version,
+ * as published by the Free Software Foundation.
+ *
+ * MegaMek is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * A copy of the GPL should have been included with this project;
+ * if not, see <https://www.gnu.org/licenses/>.
+ *
+ * NOTICE: The MegaMek organization is a non-profit group of volunteers
+ * creating free software for the BattleTech community.
+ *
+ * MechWarrior, BattleMech, `Mech and AeroTech are registered trademarks
+ * of The Topps Company, Inc. All Rights Reserved.
+ *
+ * Catalyst Game Labs and the Catalyst Game Labs logo are trademarks of
+ * InMediaRes Productions, LLC.
+ *
+ * MechWarrior Copyright Microsoft Corporation. MegaMek was created under
+ * Microsoft's "Game Content Usage Rules"
+ * <https://www.xbox.com/en-US/developers/rules> and it is not endorsed by or
+ * affiliated with Microsoft.
  */
 package megamek.common.alphaStrike.play;
 
+import megamek.common.alphaStrike.ASMessages;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,16 +59,27 @@ public class ASUnit implements InGameObject, Serializable {
     public static final int SPRINT = 3;
     public static final int JUMP = 4;
     public static final int IMMOBILE = 5;
-    public static final String[] MODE_NAMES = { "stand", "ground", "minimum", "sprint", "jump", "immobile" };
+    /**
+     * The movement mode's name for the window and the report ("stand", "ground", "sprint"...).
+     *
+     * @param mode STAND, GROUND, MINIMUM, SPRINT, JUMP or IMMOBILE
+     *
+     * @return the name
+     */
+    public static String modeName(int mode) {
+        return ASMessages.getString("ASUnit.mode." + mode);
+    }
 
     // special abilities the rules use
     public static final int F_CASE = 1, F_CASEII = 2, F_ENE = 4, F_OVL = 8, F_MEL = 16, F_BAR = 32, F_ARM = 64,
           F_HT = 128,
-          F_STL = 1 << 8,       // stealth: +1 TN at Medium, +2 at Long; its own ECM is off and it counts as jammed [p. 79]
+          // stealth: +1 TN at Medium, +2 at Long; its own ECM is off and it counts as jammed [p. 79]
+          F_STL = 1 << 8,
           F_MAS = 1 << 9,       // mimetic armor: +3 TN vs weapon attacks if it stood still [p. 78]
           F_LMAS = 1 << 10,     // light mimetic: +2
           F_AMS = 1 << 11,      // anti-missile: -1 damage (min 1) from IF/SRM/LRM units, front arc [p. 76]
-          F_SHLD = 1 << 12,     // shield: -1 damage from weapons/physical (min 0), +1 TN on its own weapon attacks [p. 76]
+          // shield: -1 damage from weapons/physical (min 0), +1 TN on its own weapon attacks [p. 76]
+          F_SHLD = 1 << 12,
           F_TSM = 1 << 13,      // TSM: +2" Move and +1 physical damage when heat >= 1 [p. 79]
           F_ITSM = 1 << 14,     // industrial TSM: +1 physical damage, +2 TN physical [p. 78]
           F_CR = 1 << 15,       // critical-resistant: -2 on the critical hit roll [p. 86]
@@ -52,7 +90,16 @@ public class ASUnit implements InGameObject, Serializable {
 
     // C3 [pp. 80-82]
     public static final int C3_NONE = 0, C3_MASTER = 1, C3_SLAVE = 2, C3_IMPROVED = 3, C3_NOVA = 4;
-    public static final String[] C3_NAMES = { "", "C3 master", "C3 slave", "C3i", "Nova CEWS" };
+    /**
+     * The C3 system's name for the window ("C3 master", "C3i"...).
+     *
+     * @param c3Type C3_MASTER, C3_SLAVE, C3_IMPROVED or C3_NOVA
+     *
+     * @return the name ("" for C3_NONE)
+     */
+    public static String c3Name(int c3Type) {
+        return (c3Type == C3_NONE) ? "" : ASMessages.getString("ASUnit.c3." + c3Type);
+    }
 
     // critical hit effects
     public static final int C_AMMO = 1, C_ENGINE = 2, C_FC = 3, C_WEAPON = 4, C_MP = 5, C_DESTROYED = 6;
@@ -71,7 +118,9 @@ public class ASUnit implements InGameObject, Serializable {
     /** C3 system (C3_*) and whether it is a boosted one (only Angel ECM jams it). */
     public final int c3Type;
     public final boolean c3Boosted;
-    /** C3 network set up in the lobby: the unit's master (-1 = none / top of the network) and network id (-1 = none). */
+    /**
+     * C3 network set up in the lobby: the unit's master (-1 = none / top of the network) and network id (-1 = none).
+     */
     public int c3Parent = -1;
     public int c3Net = -1;
     /** Damage S/M/L times two (so "0*" = 1 fits in an int; MegaMek's network filter doesn't allow double[]). */
@@ -92,6 +141,7 @@ public class ASUnit implements InGameObject, Serializable {
     public final List<Integer> pendingCrits = new ArrayList<>();
     public int damageDealt, damageTaken, kills;
 
+    /** A unit made from its Alpha Strike card (MegaMek's converted element). */
     public ASUnit(AlphaStrikeElement element) {
         this.element = element;
         id = element.getId();
@@ -102,7 +152,7 @@ public class ASUnit implements InGameObject, Serializable {
         size = element.getSize();
         int ground = element.getPrimaryMovementValue();
         int jump = element.getJumpMove();
-        baseMove = ground > 0 ? ground : jump;
+        baseMove = (ground > 0) ? ground : jump;
         baseJump = Math.max(jump, 0);
         baseTmm = element.getTMM();
         fullArmor = element.getFullArmor();
@@ -122,7 +172,7 @@ public class ASUnit implements InGameObject, Serializable {
         f |= element.hasSUA(BattleForceSUA.MEL) ? F_MEL : 0;
         f |= element.hasSUA(BattleForceSUA.BAR) ? F_BAR : 0;
         f |= element.hasSUA(BattleForceSUA.ARM) ? F_ARM : 0;
-        if (element.hasSUA(BattleForceSUA.HT) && element.getSUA(BattleForceSUA.HT) instanceof ASDamageVector htv) {
+        if (element.hasSUA(BattleForceSUA.HT) && (element.getSUA(BattleForceSUA.HT) instanceof ASDamageVector htv)) {
             f |= F_HT;
             ASDamage[] hb = { htv.S(), htv.M(), htv.L() };
             for (int i = 0; i < 3; i++) {
@@ -132,15 +182,15 @@ public class ASUnit implements InGameObject, Serializable {
         f |= has(element, BattleForceSUA.STL) ? F_STL : 0;
         f |= has(element, BattleForceSUA.MAS) ? F_MAS : 0;
         f |= has(element, BattleForceSUA.LMAS) ? F_LMAS : 0;
-        f |= has(element, BattleForceSUA.AMS) || has(element, BattleForceSUA.RAMS) ? F_AMS : 0;
+        f |= (has(element, BattleForceSUA.AMS) || has(element, BattleForceSUA.RAMS)) ? F_AMS : 0;
         f |= has(element, BattleForceSUA.SHLD) ? F_SHLD : 0;
         f |= has(element, BattleForceSUA.TSM) ? F_TSM : 0;
         f |= has(element, BattleForceSUA.ITSM) ? F_ITSM : 0;
         f |= has(element, BattleForceSUA.CR) ? F_CR : 0;
         f |= has(element, BattleForceSUA.FR) ? F_FR : 0;
-        f |= has(element, BattleForceSUA.IF) || has(element, BattleForceSUA.SRM) || has(element, BattleForceSUA.LRM)
+        f |= (has(element, BattleForceSUA.IF) || has(element, BattleForceSUA.SRM) || has(element, BattleForceSUA.LRM))
               ? F_MISSILE : 0;
-        if (element.hasSUA(BattleForceSUA.REAR) && element.getSUA(BattleForceSUA.REAR) instanceof ASDamageVector rv) {
+        if (element.hasSUA(BattleForceSUA.REAR) && (element.getSUA(BattleForceSUA.REAR) instanceof ASDamageVector rv)) {
             f |= F_REAR;
             fill(rearTimes2, rv);
         }
@@ -202,7 +252,7 @@ public class ASUnit implements InGameObject, Serializable {
 
     private double reduced(double d) {
         if (weaponHits != 0) {
-            return d >= 1 ? Math.max(0, (int) d - weaponHits) : 0;
+            return (d >= 1) ? Math.max(0, (int) d - weaponHits) : 0;
         }
         return d;
     }
@@ -230,40 +280,46 @@ public class ASUnit implements InGameObject, Serializable {
         return element;
     }
 
+    /** True if the unit has this special ability (one of the F_ flags). */
     public boolean has(int flag) {
         return (flags & flag) != 0;
     }
 
+    /** True until the unit is removed from the battlefield (a unit destroyed this turn is still alive). */
     public boolean alive() {
         return !destroyed;
     }
 
+    /** Ground Move in inches right now, after heat (and TSM). */
     public int groundInches() {
         int loss = 2 * heat;
-        if (has(F_TSM) && heat >= 1) {
+        if (has(F_TSM) && (heat >= 1)) {
             loss = (heat == 1) ? -2 : loss - 2;     // TSM: +2" when hot, and heat 1 costs nothing [p. 79]
         }
         return Math.max(moveIn - loss, 0);
     }
 
+    /** True if the unit can't move at all (shut down, or no Move left). */
     public boolean immobile() {
-        return shutdown || (groundInches() <= 0 && jumpIn <= 0);
+        return shutdown || ((groundInches() <= 0) && (jumpIn <= 0));
     }
 
+    /** Armor + structure left. */
     public int hp() {
         return armor + structure;
     }
 
+    /** Armor + structure on the card (at least 1). */
     public int hpFull() {
         return Math.max(fullArmor + fullStructure, 1);
     }
 
     /** Target movement modifier for a movement mode this turn [p. 42]. */
     public int tmmNow(int mode, ASRules r) {
-        if (mode == IMMOBILE || shutdown) {
+        if ((mode == IMMOBILE) || shutdown) {
             return r.targetImmobile;
         }
-        if (mode == STAND || mode == MINIMUM) {
+        if ((mode == STAND) || (mode == MINIMUM)) {
             return 0;
         }
         int t = tmm;
@@ -283,7 +339,7 @@ public class ASUnit implements InGameObject, Serializable {
     public double damageAt(int band) {
         double d = baseDamage(band);
         if (weaponHits != 0) {
-            return d >= 1 ? Math.max(0, (int) d - weaponHits) : 0;
+            return (d >= 1) ? Math.max(0, (int) d - weaponHits) : 0;
         }
         return d;
     }
@@ -293,12 +349,14 @@ public class ASUnit implements InGameObject, Serializable {
         return dmgTimes2[band] / 2.0;
     }
 
+    /** Heat its HT special deals at range band 0/1/2 (after weapon hits). */
     public int heatAt(int band) {
         return has(F_HT) ? Math.max(0, ht[band] - weaponHits) : 0;
     }
 
+    /** How much it may overheat at range band 0/1/2 (Long only with OVL). */
     public int maxOv(int band) {
-        return (band == 2 && !has(F_OVL)) ? 0 : ov;
+        return ((band == 2) && !has(F_OVL)) ? 0 : ov;
     }
 
     // --- InGameObject --------------------------------------------------------------------
@@ -350,8 +408,8 @@ public class ASUnit implements InGameObject, Serializable {
 
     /** Short status for tooltips and reports: "Atlas AS7-D  A5/S8  heat 1". */
     public String statusText() {
-        return name + "  A" + armor + "/S" + structure + (heat > 0 ? "  heat " + heat : "")
-              + (shutdown ? "  SHUTDOWN" : "") + (destroyed || doomed ? "  DESTROYED" : "");
+        return name + "  A" + armor + "/S" + structure + ((heat > 0) ? "  heat " + heat : "")
+              + (shutdown ? "  SHUTDOWN" : "") + ((destroyed || doomed) ? "  DESTROYED" : "");
     }
 
     @Override

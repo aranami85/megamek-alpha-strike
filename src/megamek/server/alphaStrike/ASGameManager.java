@@ -1,11 +1,38 @@
 /*
  * Copyright (C) 2026 The MegaMek Team. All Rights Reserved.
  *
- * This file is part of MegaMek. MegaMek is free software: you can redistribute it and/or modify it under the terms of
- * the GNU General Public License (GPL), version 3 or (at your option) any later version.
+ * This file is part of MegaMek.
+ *
+ * MegaMek is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License (GPL),
+ * version 3 or (at your option) any later version,
+ * as published by the Free Software Foundation.
+ *
+ * MegaMek is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * A copy of the GPL should have been included with this project;
+ * if not, see <https://www.gnu.org/licenses/>.
+ *
+ * NOTICE: The MegaMek organization is a non-profit group of volunteers
+ * creating free software for the BattleTech community.
+ *
+ * MechWarrior, BattleMech, `Mech and AeroTech are registered trademarks
+ * of The Topps Company, Inc. All Rights Reserved.
+ *
+ * Catalyst Game Labs and the Catalyst Game Labs logo are trademarks of
+ * InMediaRes Productions, LLC.
+ *
+ * MechWarrior Copyright Microsoft Corporation. MegaMek was created under
+ * Microsoft's "Game Content Usage Rules"
+ * <https://www.xbox.com/en-US/developers/rules> and it is not endorsed by or
+ * affiliated with Microsoft.
  */
 package megamek.server.alphaStrike;
 
+import megamek.common.alphaStrike.ASMessages;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,7 +68,7 @@ import megamek.server.commands.ServerCommand;
  */
 public final class ASGameManager extends AbstractGameManager {
 
-    private static final MMLogger logger = MMLogger.create(ASGameManager.class);
+    private static final MMLogger LOGGER = MMLogger.create(ASGameManager.class);
 
     private ASGame game;
     private ASEngine engine;
@@ -62,7 +89,7 @@ public final class ASGameManager extends AbstractGameManager {
     @Override
     public void setGame(IGame g) {
         if (!(g instanceof ASGame asGame)) {
-            logger.fatal("Attempted to set game to incorrect class.");
+            LOGGER.fatal("Attempted to set game to incorrect class.");
             return;
         }
         game = asGame;
@@ -80,7 +107,7 @@ public final class ASGameManager extends AbstractGameManager {
                 default -> { }
             }
         } catch (Exception e) {
-            logger.error("Bad Alpha Strike order", e);
+            LOGGER.error("Bad Alpha Strike order", e);
         }
         sendPendingPackets();
     }
@@ -93,7 +120,7 @@ public final class ASGameManager extends AbstractGameManager {
         pendingPackets.clear();
         for (Player player : game.getPlayersList()) {
             List<Packet> packets = toSend.stream()
-                  .filter(p -> p.recipient == Player.PLAYER_NONE || p.recipient == player.getId())
+                  .filter(p -> (p.recipient == Player.PLAYER_NONE) || (p.recipient == player.getId()))
                   .map(PendingPacket::packet)
                   .toList();
             if (!packets.isEmpty()) {
@@ -145,7 +172,7 @@ public final class ASGameManager extends AbstractGameManager {
             send(connId, allReportsPacket());
             send(connId, unitsPacket());
             send(connId, packetHelper.createPhaseChangePacket());
-            if (game.getPhase().usesTurns() && game.getTurn() != null) {
+            if (game.getPhase().usesTurns() && (game.getTurn() != null)) {
                 send(connId, turnsPacket());
                 send(connId, packetHelper.createTurnIndexPacket(Player.PLAYER_NONE));
             }
@@ -170,7 +197,7 @@ public final class ASGameManager extends AbstractGameManager {
                 List<Integer> sides = game.sides();
                 if (sides.size() >= 2) {
                     List<String> lines = new ArrayList<>();
-                    lines.add("<b>Round " + game.getCurrentRound() + "</b>");
+                    lines.add(ASMessages.getString("ASGameManager.round", game.getCurrentRound()));
                     int winner = engine.rollInitiative(sides.get(0), sides.get(1), lines);
                     game.setInitiativeWinner(winner);
                     pendingReports.addAll(lines);
@@ -185,7 +212,7 @@ public final class ASGameManager extends AbstractGameManager {
             }
             case END -> {
                 // (END isn't a "playable" phase, so MegaMek skips straight to endCurrentPhase(): do the work here)
-                pendingReports.add("<b>End Phase</b>");
+                pendingReports.add(ASMessages.getString("ASGameManager.endPhase"));
                 pendingReports.addAll(engine.endPhase());
                 checkVictory();
                 game.addReports(game.getCurrentRound(), pendingReports);
@@ -198,8 +225,7 @@ public final class ASGameManager extends AbstractGameManager {
                 deployAll();
                 resetPlayersDone(true);
                 transmitAllPlayerDones();
-                String line = "<b>Deployment</b>: move your units anywhere in your " + ASEngine.DEPLOY_DEPTH
-                      + "-hex strip, then click Done.";
+                String line = ASMessages.getString("ASGameManager.deployment", ASEngine.DEPLOY_DEPTH);
                 send(new Packet(PacketCommand.SENDING_REPORTS, new ArrayList<>(List.of(line)), -1));
                 send(unitsPacket());
             }
@@ -249,13 +275,13 @@ public final class ASGameManager extends AbstractGameManager {
         List<ASTurn> turns = new ArrayList<>();
         if (sides.size() >= 2) {
             int winner = game.getInitiativeWinner();
-            int loser = sides.get(0) == winner ? sides.get(1) : sides.get(0);
+            int loser = (sides.get(0) == winner) ? sides.get(1) : sides.get(0);
             List<Integer> order = phase.isMovement() ? engine.movementOrder(loser, winner)
                   : engine.combatOrder(loser, winner);
             // units left to act per player, to share a team's steps among its players
             Map<Integer, Integer> left = new HashMap<>();
             for (ASUnit u : game.getUnits()) {
-                if (u.alive() && u.position != null) {
+                if (u.alive() && (u.position != null)) {
                     left.merge(u.getOwnerId(), 1, Integer::sum);
                 }
             }
@@ -264,7 +290,7 @@ public final class ASGameManager extends AbstractGameManager {
                 int most = 0;
                 for (Player p : game.getPlayersList()) {
                     int n = left.getOrDefault(p.getId(), 0);
-                    if (game.sideOfPlayer(p.getId()) == side && n > most) {
+                    if ((game.sideOfPlayer(p.getId()) == side) && (n > most)) {
                         most = n;
                         bestPlayer = p.getId();
                     }
@@ -296,7 +322,7 @@ public final class ASGameManager extends AbstractGameManager {
         }
         send(packetHelper.createTurnIndexPacket(prevPlayerId));
         Player player = game.getPlayer(next.playerId());
-        if (player != null && player.isGhost()) {
+        if ((player != null) && player.isGhost()) {
             sendGhostSkipMessage(player);
         }
     }
@@ -310,8 +336,8 @@ public final class ASGameManager extends AbstractGameManager {
         }
         ASTurn turn = game.getTurn();
         ASUnit unit = game.getUnit(order.unitId());
-        if (turn == null || unit == null || !turn.isValid(connId, unit, game)) {
-            logger.error("Player {} sent an order for unit {} out of turn", connId, order.unitId());
+        if ((turn == null) || (unit == null) || !turn.isValid(connId, unit, game)) {
+            LOGGER.error("Player {} sent an order for unit {} out of turn", connId, order.unitId());
             send(connId, turnsPacket());
             send(connId, packetHelper.createTurnIndexPacket(Player.PLAYER_NONE));
             return;
@@ -319,19 +345,20 @@ public final class ASGameManager extends AbstractGameManager {
         if (order.isMove() && game.getPhase().isMovement()) {
             int dest = game.asBoard().index(new megamek.common.board.Coords(order.x(), order.y()));
             if (!engine.isLegalMove(unit, dest, order.mode())) {
-                logger.error("Illegal move for {}: {}", unit, order);
+                LOGGER.error("Illegal move for {}: {}", unit, order);
                 send(connId, unitPacket(unit));
                 return;
             }
             String from = hexName(unit.position);
             engine.applyMove(unit, dest, order.mode(), order.facing());
-            if (order.mode() != ASUnit.STAND && order.mode() != ASUnit.IMMOBILE) {
+            if ((order.mode() != ASUnit.STAND) && (order.mode() != ASUnit.IMMOBILE)) {
                 String verb = switch (order.mode()) {
-                    case ASUnit.JUMP -> "jumps";
-                    case ASUnit.SPRINT -> "sprints";
-                    default -> "moves";
+                    case ASUnit.JUMP -> ASMessages.getString("ASGameManager.jumps");
+                    case ASUnit.SPRINT -> ASMessages.getString("ASGameManager.sprints");
+                    default -> ASMessages.getString("ASGameManager.moves");
                 };
-                String line = tag(unit) + " " + verb + " " + from + " -> " + hexName(unit.position);
+                String line = ASMessages.getString("ASGameManager.moveLine", tag(unit), verb, from,
+                      hexName(unit.position));
                 pendingReports.add(line);
                 send(new Packet(PacketCommand.SENDING_REPORTS, new ArrayList<>(List.of(line)), -1)); // live log
             }
@@ -347,11 +374,11 @@ public final class ASGameManager extends AbstractGameManager {
                 send(unitPacket(target));
             }
             ASUnit rearTarget = game.getUnit(order.rearTargetId());
-            if (rearTarget != null && rearTarget != target) {
+            if ((rearTarget != null) && (rearTarget != target)) {
                 send(unitPacket(rearTarget));
             }
         } else {
-            logger.error("Order {} doesn't fit phase {}", order, game.getPhase());
+            LOGGER.error("Order {} doesn't fit phase {}", order, game.getPhase());
             return;
         }
         changeToNextTurn(connId);
@@ -361,14 +388,14 @@ public final class ASGameManager extends AbstractGameManager {
     private void receiveDeployment(int connId, ASOrder order) {
         ASUnit unit = game.getUnit(order.unitId());
         Player player = game.getPlayer(connId);
-        if (unit == null || player == null || unit.getOwnerId() != connId || !order.isMove() || player.isDone()) {
-            logger.error("Player {} sent a bad deployment order {}", connId, order);
+        if ((unit == null) || (player == null) || (unit.getOwnerId() != connId) || !order.isMove() || player.isDone()) {
+            LOGGER.error("Player {} sent a bad deployment order {}", connId, order);
             send(connId, unitsPacket());
             return;
         }
         int dest = game.asBoard().index(new megamek.common.board.Coords(order.x(), order.y()));
         if (!engine.redeploy(unit, dest, order.facing())) {
-            logger.error("Can't deploy {} there: {}", unit, order);
+            LOGGER.error("Can't deploy {} there: {}", unit, order);
         }
         send(unitsPacket());      // (a swap moves two units)
     }
@@ -379,7 +406,7 @@ public final class ASGameManager extends AbstractGameManager {
 
     private String tag(ASUnit unit) {
         Player p = game.getPlayer(unit.getOwnerId());
-        return "[" + (p != null ? p.getName() : "?") + "] " + unit.name;
+        return "[" + ((p != null) ? p.getName() : "?") + "] " + unit.name;
     }
 
     // --- deployment and victory -------------------------------------------------------------------
@@ -389,7 +416,7 @@ public final class ASGameManager extends AbstractGameManager {
         List<Integer> sides = game.sides();
         for (int k = 0; k < sides.size(); k++) {
             int side = sides.get(k);
-            int edge = k == 0 ? 3 : 1; // default: first side west, second side east
+            int edge = (k == 0) ? 3 : 1; // default: first side west, second side east
             for (Player p : game.getPlayersList()) {
                 if (game.sideOfPlayer(p.getId()) == side) {
                     String start = megamek.common.interfaces.IStartingPositions.START_LOCATION_NAMES[
@@ -414,7 +441,7 @@ public final class ASGameManager extends AbstractGameManager {
 
     private boolean isGameOver() {
         long sidesLeft = game.sides().stream().filter(s -> game.aliveCount(s) > 0).count();
-        return sidesLeft <= 1 || game.getCurrentRound() >= game.getRules().maxTurns;
+        return (sidesLeft <= 1) || (game.getCurrentRound() >= game.getRules().maxTurns);
     }
 
     private void checkVictory() {
@@ -425,21 +452,21 @@ public final class ASGameManager extends AbstractGameManager {
         List<Integer> alive = sides.stream().filter(s -> game.aliveCount(s) > 0).toList();
         String result;
         if (alive.size() == 1) {
-            result = game.sideName(alive.get(0)) + " wins!";
+            result = ASMessages.getString("ASGameManager.wins", game.sideName(alive.get(0)));
         } else if (alive.isEmpty()) {
-            result = "Draw - nobody is left standing.";
+            result = ASMessages.getString("ASGameManager.drawNobody");
         } else {
             // out of time: whoever has more left wins [same as the simulator]
             int a = sides.get(0);
             int b = sides.get(1);
             double sa = engine.score(a);
             double sb = engine.score(b);
-            result = Math.abs(sa - sb) < 0.05 ? "Draw (time is up, forces about even)"
-                  : game.sideName(sa > sb ? a : b) + " wins on points (time is up)";
+            result = (Math.abs(sa - sb) < 0.05) ? ASMessages.getString("ASGameManager.drawTime")
+                  : ASMessages.getString("ASGameManager.winsOnPoints", game.sideName((sa > sb) ? a : b));
             result += String.format(" - left: %s %.0f%%, %s %.0f%%", game.sideName(a), 100 * sa, game.sideName(b),
                   100 * sb);
         }
-        pendingReports.add("<b>GAME OVER: " + result + "</b>");
+        pendingReports.add(ASMessages.getString("ASGameManager.gameOver", result));
     }
 
     // --- the rest of IGameManager ------------------------------------------------------------------
@@ -451,12 +478,12 @@ public final class ASGameManager extends AbstractGameManager {
     @Override
     public void disconnect(Player player) {
         // While players are (re)connecting at the start, a disconnect is expected (the lobby window closing).
-        if (player == null || game.getPhase() == GamePhase.STARTING_SCENARIO || game.getPhase().isVictory()) {
+        if ((player == null) || (game.getPhase() == GamePhase.STARTING_SCENARIO) || game.getPhase().isVictory()) {
             return;
         }
         player.setGhost(true);
         transmitPlayerUpdate(player);
-        sendServerChat(player.getName() + " disconnected. Reconnect with the same name to continue.");
+        sendServerChat(ASMessages.getString("ASGameManager.disconnected", player.getName()));
     }
 
     /** At the start, wait until every player who owns units has connected (bots and humans reconnecting). */

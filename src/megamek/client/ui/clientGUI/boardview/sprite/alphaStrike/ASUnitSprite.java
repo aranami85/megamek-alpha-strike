@@ -1,11 +1,38 @@
 /*
  * Copyright (C) 2026 The MegaMek Team. All Rights Reserved.
  *
- * This file is part of MegaMek. MegaMek is free software: you can redistribute it and/or modify it under the terms of
- * the GNU General Public License (GPL), version 3 or (at your option) any later version.
+ * This file is part of MegaMek.
+ *
+ * MegaMek is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License (GPL),
+ * version 3 or (at your option) any later version,
+ * as published by the Free Software Foundation.
+ *
+ * MegaMek is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * A copy of the GPL should have been included with this project;
+ * if not, see <https://www.gnu.org/licenses/>.
+ *
+ * NOTICE: The MegaMek organization is a non-profit group of volunteers
+ * creating free software for the BattleTech community.
+ *
+ * MechWarrior, BattleMech, `Mech and AeroTech are registered trademarks
+ * of The Topps Company, Inc. All Rights Reserved.
+ *
+ * Catalyst Game Labs and the Catalyst Game Labs logo are trademarks of
+ * InMediaRes Productions, LLC.
+ *
+ * MechWarrior Copyright Microsoft Corporation. MegaMek was created under
+ * Microsoft's "Game Content Usage Rules"
+ * <https://www.xbox.com/en-US/developers/rules> and it is not endorsed by or
+ * affiliated with Microsoft.
  */
 package megamek.client.ui.clientGUI.boardview.sprite.alphaStrike;
 
+import megamek.common.alphaStrike.ASMessages;
 import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -29,14 +56,15 @@ import megamek.common.board.Coords;
 
 /**
  * An Alpha Strike unit on the map: MegaMek's picture of the unit in its owner's camo (a plain counter if there is no
- * picture), turned to face the hex edge it faces (an arrow for plain counters), a name label with armor (white) and structure (orange) pips, heat, and a
- * to-hit tag when it can be attacked. Selected = yellow hex outline, looked-at = cyan, chosen target = red. Units that
- * have already acted this phase are dimmed. Units destroyed this turn get the red X at once (they leave the map in the
- * End Phase). A "ghost" shows where a unit is planning to move.
+ * picture), turned to face the hex edge it faces (an arrow for plain counters), a name label with armor (white) and
+ * structure (orange) pips, heat, and a to-hit tag when it can be attacked. Selected = yellow hex outline, looked-at =
+ * cyan, chosen target = red. Units that have already acted this phase are dimmed. Units destroyed this turn get the red
+ * X at once (they leave the map in the End Phase). A "ghost" shows where a unit is planning to move.
  */
 public class ASUnitSprite extends Sprite {
 
-    private static final Polygon HEX = new Polygon(new int[] { 21, 62, 83, 62, 21, 0 }, new int[] { 0, 0, 35, 71, 71, 35 },
+    private static final Polygon HEX = new Polygon(new int[] { 21, 62, 83, 62, 21, 0 }, new int[] { 0, 0, 35, 71, 71,
+          35 },
           6);
 
     private final ASUnit unit;
@@ -50,6 +78,7 @@ public class ASUnitSprite extends Sprite {
     private String targetText;          // e.g. "8+" when this unit can be attacked by the selected unit
     private boolean isTarget;           // the attack target currently chosen
 
+    /** A unit's picture at a hex and facing (ghost = where it is planning to move). */
     public ASUnitSprite(BoardView boardView, ASUnit unit, Player owner, Coords where, int facing, boolean ghost) {
         super(boardView);
         this.unit = unit;
@@ -78,6 +107,7 @@ public class ASUnitSprite extends Sprite {
         this.done = done;
     }
 
+    /** Shows the roll needed to hit it ("8+"); chosen = it is the chosen target. */
     public void setTargetInfo(String text, boolean chosen) {
         targetText = text;
         isTarget = chosen;
@@ -116,7 +146,7 @@ public class ASUnitSprite extends Sprite {
         BufferedImage picture = ASUnitImages.imageFor(unit, owner);
         if (picture != null) {
             // MegaMek's pictures look "up" (north); turn the unit to face the hex edge it faces
-            BufferedImage shown = wreck ? darken(picture, 0.35f) : (done && !ghost ? darken(picture, 0.7f) : picture);
+            BufferedImage shown = wreck ? darken(picture, 0.35f) : ((done && !ghost) ? darken(picture, 0.7f) : picture);
             AffineTransform old = g.getTransform();
             g.rotate(Math.toRadians(facing * 60), 42, 36);
             g.drawImage(shown, 0, 0, null);
@@ -139,10 +169,10 @@ public class ASUnitSprite extends Sprite {
         }
 
         // name label with pips (like MegaMek's unit label)
-        String name = unit.generalName() == null ? unit.name : unit.generalName();
+        String name = (unit.generalName() == null) ? unit.name : unit.generalName();
         g.setFont(new Font("SansSerif", Font.BOLD, 9));
         if (g.getFontMetrics().stringWidth(name) > 66) {
-            while (name.length() > 3 && g.getFontMetrics().stringWidth(name + ".") > 66) {
+            while ((name.length() > 3) && (g.getFontMetrics().stringWidth(name + ".") > 66)) {
                 name = name.substring(0, name.length() - 1);
             }
             name = name + ".";
@@ -159,7 +189,7 @@ public class ASUnitSprite extends Sprite {
         drawPips(g, unit.armor, unit.fullArmor, 63, Color.WHITE);
         drawPips(g, unit.structure, unit.fullStructure, 67, new Color(255, 150, 40));
 
-        if (unit.heat > 0 && !wreck) {
+        if ((unit.heat > 0) && !wreck) {
             g.setColor(Color.RED);
             g.setFont(new Font("SansSerif", Font.BOLD, 10));
             g.drawString("H" + unit.heat, 8, 18);
@@ -172,7 +202,7 @@ public class ASUnitSprite extends Sprite {
         } else if (unit.shutdown) {
             g.setColor(Color.RED);
             g.setFont(new Font("SansSerif", Font.BOLD, 9));
-            g.drawString("SHUTDOWN", 17, 48);
+            g.drawString(ASMessages.getString("ASUnitSprite.shutdown"), 17, 48);
         }
         if (targetText != null) {
             g.setFont(new Font("SansSerif", Font.BOLD, 14));
@@ -239,7 +269,7 @@ public class ASUnitSprite extends Sprite {
 
     private static Color textColor(Color background) {
         double lum = 0.299 * background.getRed() + 0.587 * background.getGreen() + 0.114 * background.getBlue();
-        return lum > 140 ? Color.BLACK : Color.WHITE;
+        return (lum > 140) ? Color.BLACK : Color.WHITE;
     }
 
     @Override

@@ -1,8 +1,34 @@
 /*
  * Copyright (C) 2026 The MegaMek Team. All Rights Reserved.
  *
- * This file is part of MegaMek. MegaMek is free software: you can redistribute it and/or modify it under the terms of
- * the GNU General Public License (GPL), version 3 or (at your option) any later version.
+ * This file is part of MegaMek.
+ *
+ * MegaMek is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License (GPL),
+ * version 3 or (at your option) any later version,
+ * as published by the Free Software Foundation.
+ *
+ * MegaMek is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * A copy of the GPL should have been included with this project;
+ * if not, see <https://www.gnu.org/licenses/>.
+ *
+ * NOTICE: The MegaMek organization is a non-profit group of volunteers
+ * creating free software for the BattleTech community.
+ *
+ * MechWarrior, BattleMech, `Mech and AeroTech are registered trademarks
+ * of The Topps Company, Inc. All Rights Reserved.
+ *
+ * Catalyst Game Labs and the Catalyst Game Labs logo are trademarks of
+ * InMediaRes Productions, LLC.
+ *
+ * MechWarrior Copyright Microsoft Corporation. MegaMek was created under
+ * Microsoft's "Game Content Usage Rules"
+ * <https://www.xbox.com/en-US/developers/rules> and it is not endorsed by or
+ * affiliated with Microsoft.
  */
 package megamek.client.bot.alphaStrike;
 
@@ -32,7 +58,7 @@ import megamek.logging.MMLogger;
  */
 public class ASScriptedBot extends ASClient {
 
-    private static final MMLogger logger = MMLogger.create(ASScriptedBot.class);
+    private static final MMLogger LOGGER = MMLogger.create(ASScriptedBot.class);
 
     private final double caution = 0.5;
     private final int maxHeat = 1;
@@ -42,6 +68,7 @@ public class ASScriptedBot extends ASClient {
     private final Map<Integer, Integer> preferredRange = new HashMap<>();
     private volatile boolean busy;
 
+    /** A scripted bot connecting to the game server. */
     public ASScriptedBot(String name, String host, int port) {
         super(name, host, port);
         getGame().addGameListener(new GameListenerAdapter() {
@@ -83,17 +110,18 @@ public class ASScriptedBot extends ASClient {
                 chooseAttack(game, engine, ready);
             }
         } catch (Exception ex) {
-            logger.error("Alpha Strike bot failed to act", ex);
+            LOGGER.error("Alpha Strike bot failed to act", ex);
         } finally {
             busy = false;
         }
     }
 
+    /** Picks and sends one move for one of the units that may move now. */
     protected void chooseMove(ASGame game, ASEngine engine, List<ASUnit> ready) {
         ASUnit unit = ready.get(0);
         for (ASUnit u : ready) {
-            if (u.groundInches() < unit.groundInches()
-                  || (u.groundInches() == unit.groundInches() && u.getId() < unit.getId())) {
+            if ((u.groundInches() < unit.groundInches())
+                  || ((u.groundInches() == unit.groundInches()) && (u.getId() < unit.getId()))) {
                 unit = u;
             }
         }
@@ -135,7 +163,7 @@ public class ASScriptedBot extends ASClient {
             }
         }
         int nearPos = b.index(near.position);
-        int facing = nearPos != dest ? b.faceToward(dest, nearPos) : unit.facing;
+        int facing = (nearPos != dest) ? b.faceToward(dest, nearPos) : unit.facing;
         double offense = 0;
         double threat = 0;
         for (ASUnit e : enemies) {
@@ -202,15 +230,16 @@ public class ASScriptedBot extends ASClient {
         if (info.maxOv() <= 0) {
             return 0;
         }
-        int engineHit = unit.engineHits != 0 ? 1 : 0;
+        int engineHit = (unit.engineHits != 0) ? 1 : 0;
         int room = maxHeat - unit.heat - engineHit;
         double remaining = target.hp();
-        if (info.damage() < remaining && remaining <= info.damage() + info.maxOv()) {
+        if ((info.damage() < remaining) && (remaining <= info.damage() + info.maxOv())) {
             room = Math.max(room, killHeat - unit.heat - engineHit);
         }
         return Math.max(0, Math.min(info.maxOv(), room));
     }
 
+    /** Picks and sends one attack for one of the units that may attack now. */
     protected void chooseAttack(ASGame game, ASEngine engine, List<ASUnit> ready) {
         double bestValue = -1;
         ASUnit bestUnit = null;
@@ -219,12 +248,12 @@ public class ASScriptedBot extends ASClient {
         for (ASUnit unit : ready) {
             for (AttackInfo info : engine.attackOptions(unit)) {
                 ASUnit target = game.getUnit(info.target());
-                if (target == null || target.doomed) {
+                if ((target == null) || target.doomed) {
                     continue;
                 }
                 int ov = chooseOv(unit, target, info);
                 double value = attackValue(target, info, ov);
-                if (bestUnit == null || value > bestValue) {
+                if ((bestUnit == null) || (value > bestValue)) {
                     bestValue = value;
                     bestUnit = unit;
                     bestInfo = info;
@@ -256,7 +285,7 @@ public class ASScriptedBot extends ASClient {
         double bestValue = -1;
         for (AttackInfo r : engine.rearOptions(unit)) {
             ASUnit t = game.getUnit(r.target());
-            if (t == null || t.doomed || (main != null && r.target() == main.target())) {
+            if ((t == null) || t.doomed || ((main != null) && (r.target() == main.target()))) {
                 continue;
             }
             double v = attackValue(t, r, 0);
@@ -271,7 +300,7 @@ public class ASScriptedBot extends ASClient {
         if (main == null) {
             return best.target();
         }
-        boolean keepsDamage = main.physical() || main.damage() - (int) best.damage() >= 1;
-        return keepsDamage && best.tn() <= main.tn() ? best.target() : -1;
+        boolean keepsDamage = main.physical() || (main.damage() - (int) best.damage() >= 1);
+        return (keepsDamage && (best.tn() <= main.tn())) ? best.target() : -1;
     }
 }

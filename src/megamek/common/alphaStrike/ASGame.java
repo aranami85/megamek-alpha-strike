@@ -1,8 +1,34 @@
 /*
  * Copyright (C) 2026 The MegaMek Team. All Rights Reserved.
  *
- * This file is part of MegaMek. MegaMek is free software: you can redistribute it and/or modify it under the terms of
- * the GNU General Public License (GPL), version 3 or (at your option) any later version.
+ * This file is part of MegaMek.
+ *
+ * MegaMek is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License (GPL),
+ * version 3 or (at your option) any later version,
+ * as published by the Free Software Foundation.
+ *
+ * MegaMek is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * A copy of the GPL should have been included with this project;
+ * if not, see <https://www.gnu.org/licenses/>.
+ *
+ * NOTICE: The MegaMek organization is a non-profit group of volunteers
+ * creating free software for the BattleTech community.
+ *
+ * MechWarrior, BattleMech, `Mech and AeroTech are registered trademarks
+ * of The Topps Company, Inc. All Rights Reserved.
+ *
+ * Catalyst Game Labs and the Catalyst Game Labs logo are trademarks of
+ * InMediaRes Productions, LLC.
+ *
+ * MechWarrior Copyright Microsoft Corporation. MegaMek was created under
+ * Microsoft's "Game Content Usage Rules"
+ * <https://www.xbox.com/en-US/developers/rules> and it is not endorsed by or
+ * affiliated with Microsoft.
  */
 package megamek.common.alphaStrike;
 
@@ -54,6 +80,7 @@ public class ASGame extends AbstractGame {
     private int initiativeWinner = -1;                                   // side (team) that won initiative
     private transient ASBoard asBoard;
 
+    /** Creates an empty Alpha Strike game (units, board and players are added afterwards). */
     public ASGame() {
         setBoard(0, new Board());
     }
@@ -66,7 +93,8 @@ public class ASGame extends AbstractGame {
 
     /** The rules' view of the map (rebuilt when the board changes). */
     public ASBoard asBoard() {
-        if (asBoard == null || asBoard.width != getBoard().getWidth() || asBoard.height != getBoard().getHeight()) {
+        if ((asBoard == null) || (asBoard.width != getBoard().getWidth())
+              || (asBoard.height != getBoard().getHeight())) {
             asBoard = new ASBoard(getBoard());
         }
         return asBoard;
@@ -98,6 +126,7 @@ public class ASGame extends AbstractGame {
               .collect(Collectors.toList());
     }
 
+    /** The unit with this id, or null. */
     public ASUnit getUnit(int id) {
         InGameObject o = inGameObjects.get(id);
         return (o instanceof ASUnit u) ? u : null;
@@ -108,6 +137,7 @@ public class ASGame extends AbstractGame {
         return sideOfPlayer(unit.getOwnerId());
     }
 
+    /** The side (team number, or 1000 + player id for a player without a team) a player fights on. */
     public int sideOfPlayer(int playerId) {
         Player p = getPlayer(playerId);
         if (p == null) {
@@ -116,13 +146,14 @@ public class ASGame extends AbstractGame {
         return (p.getTeam() > Player.TEAM_NONE) ? p.getTeam() : 1000 + playerId;
     }
 
+    /** A side's name for the window and report: its players' names, or "Team n". */
     public String sideName(int side) {
         if (side >= 1000) {
             Player p = getPlayer(side - 1000);
-            return (p != null) ? p.getName() : "Player " + (side - 1000);
+            return (p != null) ? p.getName() : ASMessages.getString("ASGame.player", side - 1000);
         }
         List<String> names = getPlayersList().stream().filter(p -> p.getTeam() == side).map(Player::getName).toList();
-        return names.isEmpty() ? "Team " + side : String.join(" & ", names);
+        return names.isEmpty() ? ASMessages.getString("ASGame.team", side) : String.join(" & ", names);
     }
 
     /** The sides (teams) that have units, in order. */
@@ -130,8 +161,9 @@ public class ASGame extends AbstractGame {
         return getUnits().stream().map(this::sideOf).distinct().sorted().collect(Collectors.toList());
     }
 
+    /** How many units of a side are still on the battlefield. */
     public int aliveCount(int side) {
-        return (int) getUnits().stream().filter(u -> u.alive() && sideOf(u) == side).count();
+        return (int) getUnits().stream().filter(u -> u.alive() && (sideOf(u) == side)).count();
     }
 
     public int getInitiativeWinner() {
@@ -147,7 +179,7 @@ public class ASGame extends AbstractGame {
     /** Server-side. */
     public void addUnit(ASUnit unit) {
         int id = unit.getId();
-        if (id < 0 || inGameObjects.containsKey(id)) {
+        if ((id < 0) || inGameObjects.containsKey(id)) {
             id = getNextEntityId();
             unit.setId(id);
         }
@@ -184,6 +216,7 @@ public class ASGame extends AbstractGame {
         return graveyard;
     }
 
+    /** Not used in Alpha Strike games (units stay in the list, marked destroyed). */
     public void setGraveyard(List<InGameObject> newGraveyard) {
         graveyard.clear();
         graveyard.addAll(newGraveyard);
@@ -204,6 +237,7 @@ public class ASGame extends AbstractGame {
         return Collections.unmodifiableList(turnList);
     }
 
+    /** Sets the turn order for the current phase. */
     public void setTurns(List<ASTurn> newTurns) {
         turnList.clear();
         turnList.addAll(newTurns);
@@ -214,6 +248,7 @@ public class ASGame extends AbstractGame {
         return turnList.size() > turnIndex + 1;
     }
 
+    /** Moves to the next turn of the current phase and returns it. */
     public ASTurn changeToNextTurn() {
         turnIndex++;
         return getTurn();
@@ -231,7 +266,7 @@ public class ASGame extends AbstractGame {
     /** Units the given player may act with right now. */
     public List<ASUnit> eligibleUnits(int playerId) {
         ASTurn turn = getTurn();
-        if (turn == null || turn.playerId() != playerId) {
+        if ((turn == null) || (turn.playerId() != playerId)) {
             return List.of();
         }
         return getUnits().stream().filter(u -> turn.isValidEntity(u, this)).toList();
@@ -334,6 +369,7 @@ public class ASGame extends AbstractGame {
         return options;
     }
 
+    /** Alpha Strike games don't hide units (no double blind). */
     public boolean usesDoubleBlind() {
         return options.booleanOption(OptionsConstants.ADVANCED_DOUBLE_BLIND);
     }
@@ -343,6 +379,7 @@ public class ASGame extends AbstractGame {
         return new Report(messageId);
     }
 
+    /** Stores a round's battle report lines. */
     public void addReports(int round, List<String> lines) {
         reports.computeIfAbsent(round, r -> new ArrayList<>()).addAll(lines);
     }
@@ -355,11 +392,13 @@ public class ASGame extends AbstractGame {
         return reports;
     }
 
+    /** Replaces every round's report lines (when a client receives them all at once). */
     public void replaceAllReports(Map<Integer, List<String>> newReports) {
         reports.clear();
         reports.putAll(newReports);
     }
 
+    /** The unit with this id, if there is one. */
     public Optional<ASUnit> findUnit(int id) {
         return Optional.ofNullable(getUnit(id));
     }

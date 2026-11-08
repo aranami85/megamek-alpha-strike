@@ -40,7 +40,7 @@ See [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
 
 ## Build from source
 
-You need the Java 21 JDK and MegaMek 0.51.0.
+You need the Java 21 JDK and MegaMek 0.51.0. The code follows the [MegaMek Coding Style Guide](https://github.com/MegaMek/megamek/wiki/MegaMek-Coding-Style-Guide); on-screen text is in `src/megamek/common/alphaStrike/messages.properties`.
 
 ```
 build.bat "C:\Games\MegaMek-0.51.0"

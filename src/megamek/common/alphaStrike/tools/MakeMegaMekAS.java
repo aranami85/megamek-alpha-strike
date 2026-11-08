@@ -1,8 +1,34 @@
 /*
  * Copyright (C) 2026 The MegaMek Team. All Rights Reserved.
  *
- * This file is part of MegaMek. MegaMek is free software: you can redistribute it and/or modify it under the terms of
- * the GNU General Public License (GPL), version 3 or (at your option) any later version.
+ * This file is part of MegaMek.
+ *
+ * MegaMek is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License (GPL),
+ * version 3 or (at your option) any later version,
+ * as published by the Free Software Foundation.
+ *
+ * MegaMek is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * A copy of the GPL should have been included with this project;
+ * if not, see <https://www.gnu.org/licenses/>.
+ *
+ * NOTICE: The MegaMek organization is a non-profit group of volunteers
+ * creating free software for the BattleTech community.
+ *
+ * MechWarrior, BattleMech, `Mech and AeroTech are registered trademarks
+ * of The Topps Company, Inc. All Rights Reserved.
+ *
+ * Catalyst Game Labs and the Catalyst Game Labs logo are trademarks of
+ * InMediaRes Productions, LLC.
+ *
+ * MechWarrior Copyright Microsoft Corporation. MegaMek was created under
+ * Microsoft's "Game Content Usage Rules"
+ * <https://www.xbox.com/en-US/developers/rules> and it is not endorsed by or
+ * affiliated with Microsoft.
  */
 package megamek.common.alphaStrike.tools;
 
@@ -12,6 +38,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.ZipEntry;
@@ -23,7 +50,8 @@ import java.util.zip.ZipOutputStream;
  * so the classes can't simply sit next to it). The original MegaMek.jar is only read. Plain Java (no MegaMek classes
  * needed), so it runs straight from the Alpha Strike classes jar:
  *
- * <pre>java -cp megamek-as-classes.jar megamek.common.alphaStrike.tools.MakeMegaMekAS MegaMek.jar megamek-as-classes.jar MegaMek-AS.jar</pre>
+ * <pre>java -cp megamek-as-classes.jar megamek.common.alphaStrike.tools.MakeMegaMekAS MegaMek.jar
+ * megamek-as-classes.jar MegaMek-AS.jar</pre>
  */
 public final class MakeMegaMekAS {
 
@@ -33,6 +61,7 @@ public final class MakeMegaMekAS {
     private MakeMegaMekAS() {
     }
 
+    /** Merges the Alpha Strike classes into a copy of MegaMek.jar. Arguments: MegaMek.jar, classes jar, output jar. */
     public static void main(String[] args) throws IOException {
         if (args.length != 3) {
             System.err.println("usage: MakeMegaMekAS <MegaMek.jar> <megamek-as-classes.jar> <output MegaMek-AS.jar>");
@@ -43,7 +72,7 @@ public final class MakeMegaMekAS {
         File out = new File(args[2]);
         Map<String, byte[]> add = new HashMap<>();
         try (ZipFile z = new ZipFile(ours)) {
-            var en = z.entries();
+            Enumeration<? extends ZipEntry> en = z.entries();
             while (en.hasMoreElements()) {
                 ZipEntry e = en.nextElement();
                 if (!e.isDirectory() && !e.getName().startsWith("META-INF/")) {
@@ -54,7 +83,7 @@ public final class MakeMegaMekAS {
         File tmp = new File(out.getPath() + ".tmp");
         String buildDate = "?";
         try (ZipFile src = new ZipFile(source); ZipOutputStream zo = new ZipOutputStream(new FileOutputStream(tmp))) {
-            var en = src.entries();
+            Enumeration<? extends ZipEntry> en = src.entries();
             while (en.hasMoreElements()) {
                 ZipEntry e = en.nextElement();
                 String name = e.getName();

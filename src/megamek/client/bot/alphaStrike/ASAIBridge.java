@@ -1,8 +1,34 @@
 /*
  * Copyright (C) 2026 The MegaMek Team. All Rights Reserved.
  *
- * This file is part of MegaMek. MegaMek is free software: you can redistribute it and/or modify it under the terms of
- * the GNU General Public License (GPL), version 3 or (at your option) any later version.
+ * This file is part of MegaMek.
+ *
+ * MegaMek is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License (GPL),
+ * version 3 or (at your option) any later version,
+ * as published by the Free Software Foundation.
+ *
+ * MegaMek is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * A copy of the GPL should have been included with this project;
+ * if not, see <https://www.gnu.org/licenses/>.
+ *
+ * NOTICE: The MegaMek organization is a non-profit group of volunteers
+ * creating free software for the BattleTech community.
+ *
+ * MechWarrior, BattleMech, `Mech and AeroTech are registered trademarks
+ * of The Topps Company, Inc. All Rights Reserved.
+ *
+ * Catalyst Game Labs and the Catalyst Game Labs logo are trademarks of
+ * InMediaRes Productions, LLC.
+ *
+ * MechWarrior Copyright Microsoft Corporation. MegaMek was created under
+ * Microsoft's "Game Content Usage Rules"
+ * <https://www.xbox.com/en-US/developers/rules> and it is not endorsed by or
+ * affiliated with Microsoft.
  */
 package megamek.client.bot.alphaStrike;
 
@@ -26,7 +52,7 @@ import megamek.logging.MMLogger;
  */
 public final class ASAIBridge {
 
-    private static final MMLogger logger = MMLogger.create(ASAIBridge.class);
+    private static final MMLogger LOGGER = MMLogger.create(ASAIBridge.class);
     private static final ObjectMapper JSON = new ObjectMapper();
     private static ASAIBridge instance;
 
@@ -37,7 +63,7 @@ public final class ASAIBridge {
 
     /** The shared program, started on first use. Throws if it can't be started. */
     public static synchronized ASAIBridge get() throws Exception {
-        if (instance == null || instance.broken || !instance.process.isAlive()) {
+        if ((instance == null) || instance.broken || !instance.process.isAlive()) {
             instance = new ASAIBridge();
         }
         return instance;
@@ -46,7 +72,7 @@ public final class ASAIBridge {
     /** The AI program, if the launcher gave its path with -Das.engine. */
     private static File engineFile() {
         String engine = System.getProperty("as.engine");
-        if (engine == null || engine.isBlank()) {
+        if ((engine == null) || engine.isBlank()) {
             return null;
         }
         File f = new File(engine);
@@ -64,7 +90,7 @@ public final class ASAIBridge {
             throw new IllegalStateException("the AI program was not found (start MegaMek with -Das.engine=...)");
         }
         String modelProp = System.getProperty("as.model");
-        File model = (modelProp != null && !modelProp.isBlank()) ? new File(modelProp)
+        File model = ((modelProp != null) && !modelProp.isBlank()) ? new File(modelProp)
               : new File(engine.getParentFile(), "as_ai_model.bin");
         ProcessBuilder pb = model.exists() ? new ProcessBuilder(engine.getPath(), model.getPath())
               : new ProcessBuilder(engine.getPath());
@@ -78,7 +104,7 @@ public final class ASAIBridge {
                   new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = err.readLine()) != null) {
-                    logger.info("[as_ai_engine] {}", line);
+                    LOGGER.info("[as_ai_engine] {}", line);
                 }
             } catch (Exception ignored) {
             }
@@ -87,7 +113,7 @@ public final class ASAIBridge {
         drain.start();
         Runtime.getRuntime().addShutdownHook(new Thread(process::destroy));
         JsonNode hello = request(JSON.createObjectNode().put("cmd", "hello"));
-        logger.info("AS AI ready: {}", hello);
+        LOGGER.info("AS AI ready: {}", hello);
     }
 
     /** Sends one message and waits for the answer. */
@@ -113,6 +139,7 @@ public final class ASAIBridge {
         }
     }
 
+    /** The JSON mapper used for messages to the AI program. */
     public static ObjectMapper json() {
         return JSON;
     }

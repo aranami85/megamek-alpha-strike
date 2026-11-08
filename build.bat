@@ -14,6 +14,8 @@ mkdir build\classes
 dir /s /b src\*.java > build\sources.txt
 javac --release 21 -nowarn -encoding UTF-8 -cp "%MM%\MegaMek.jar;%MM%\lib\*" -d build\classes @build\sources.txt
 if errorlevel 1 ( echo Compile failed. & exit /b 1 )
+rem the text (messages.properties) goes in next to the classes
+robocopy src build\classes *.properties /s >nul
 jar cf megamek-as-classes.jar -C build\classes .
 echo Done: megamek-as-classes.jar
 endlocal

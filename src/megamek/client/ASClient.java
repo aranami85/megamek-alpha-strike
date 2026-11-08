@@ -1,8 +1,34 @@
 /*
  * Copyright (C) 2026 The MegaMek Team. All Rights Reserved.
  *
- * This file is part of MegaMek. MegaMek is free software: you can redistribute it and/or modify it under the terms of
- * the GNU General Public License (GPL), version 3 or (at your option) any later version.
+ * This file is part of MegaMek.
+ *
+ * MegaMek is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License (GPL),
+ * version 3 or (at your option) any later version,
+ * as published by the Free Software Foundation.
+ *
+ * MegaMek is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * A copy of the GPL should have been included with this project;
+ * if not, see <https://www.gnu.org/licenses/>.
+ *
+ * NOTICE: The MegaMek organization is a non-profit group of volunteers
+ * creating free software for the BattleTech community.
+ *
+ * MechWarrior, BattleMech, `Mech and AeroTech are registered trademarks
+ * of The Topps Company, Inc. All Rights Reserved.
+ *
+ * Catalyst Game Labs and the Catalyst Game Labs logo are trademarks of
+ * InMediaRes Productions, LLC.
+ *
+ * MechWarrior Copyright Microsoft Corporation. MegaMek was created under
+ * Microsoft's "Game Content Usage Rules"
+ * <https://www.xbox.com/en-US/developers/rules> and it is not endorsed by or
+ * affiliated with Microsoft.
  */
 package megamek.client;
 
@@ -26,7 +52,7 @@ import megamek.logging.MMLogger;
  */
 public class ASClient extends AbstractClient {
 
-    private static final MMLogger logger = MMLogger.create(ASClient.class);
+    private static final MMLogger LOGGER = MMLogger.create(ASClient.class);
 
     private final ASGame game = new ASGame();
 
@@ -34,6 +60,7 @@ public class ASClient extends AbstractClient {
     private final List<String> combatLog = new CopyOnWriteArrayList<>();
     private final List<Runnable> reportListeners = new CopyOnWriteArrayList<>();
 
+    /** An Alpha Strike client for this player name and server. */
     public ASClient(String name, String host, int port) {
         super(name, host, port);
     }
@@ -53,6 +80,7 @@ public class ASClient extends AbstractClient {
         return combatLog;
     }
 
+    /** Called whenever new combat report lines arrive. */
     public void addReportListener(Runnable listener) {
         reportListeners.add(listener);
     }
@@ -103,7 +131,7 @@ public class ASClient extends AbstractClient {
             }
             return true;
         } catch (Exception e) {
-            logger.error("Invalid Alpha Strike packet: " + packet.command(), e);
+            LOGGER.error("Invalid Alpha Strike packet: " + packet.command(), e);
             return false;
         }
     }
@@ -124,6 +152,7 @@ public class ASClient extends AbstractClient {
               rearTargetId)));
     }
 
+    /** The current round's report lines, including the live combat log. */
     public List<String> roundReportLines() {
         List<String> lines = new ArrayList<>(game.getReports(game.getCurrentRound()));
         lines.addAll(combatLog);

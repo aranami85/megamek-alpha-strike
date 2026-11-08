@@ -1,11 +1,38 @@
 /*
  * Copyright (C) 2026 The MegaMek Team. All Rights Reserved.
  *
- * This file is part of MegaMek. MegaMek is free software: you can redistribute it and/or modify it under the terms of
- * the GNU General Public License (GPL), version 3 or (at your option) any later version.
+ * This file is part of MegaMek.
+ *
+ * MegaMek is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License (GPL),
+ * version 3 or (at your option) any later version,
+ * as published by the Free Software Foundation.
+ *
+ * MegaMek is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * A copy of the GPL should have been included with this project;
+ * if not, see <https://www.gnu.org/licenses/>.
+ *
+ * NOTICE: The MegaMek organization is a non-profit group of volunteers
+ * creating free software for the BattleTech community.
+ *
+ * MechWarrior, BattleMech, `Mech and AeroTech are registered trademarks
+ * of The Topps Company, Inc. All Rights Reserved.
+ *
+ * Catalyst Game Labs and the Catalyst Game Labs logo are trademarks of
+ * InMediaRes Productions, LLC.
+ *
+ * MechWarrior Copyright Microsoft Corporation. MegaMek was created under
+ * Microsoft's "Game Content Usage Rules"
+ * <https://www.xbox.com/en-US/developers/rules> and it is not endorsed by or
+ * affiliated with Microsoft.
  */
 package megamek.client.ui.panels.phaseDisplay.lobby;
 
+import megamek.common.alphaStrike.ASMessages;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -54,16 +81,15 @@ import megamek.common.util.C3Util;
 public class ASC3GroupDialog extends JDialog {
 
     private enum Kind {
-        NONE("no C3"), MASTER("C3 master"), SLAVE("C3 slave"), C3I("C3i"), NOVA("Nova CEWS");
+        NONE, MASTER, SLAVE, C3I, NOVA;
 
-        final String label;
-
-        Kind(String label) {
-            this.label = label;
+        /** "C3 master", "C3i"... for the window. */
+        String label() {
+            return msg("ASC3GroupDialog.kind." + name());
         }
 
         boolean nonHierarchic() {
-            return this == C3I || this == NOVA;
+            return (this == C3I) || (this == NOVA);
         }
     }
 
@@ -80,29 +106,31 @@ public class ASC3GroupDialog extends JDialog {
     private final JLabel message = new JLabel(" ");
     private final JLabel preview = new JLabel();
     private final JComboBox<String> topBox = new JComboBox<>();
-    private final JButton newButton = new JButton("New group");
-    private final JButton editButton = new JButton("Edit group");
-    private final JButton breakButton = new JButton("Break up");
-    private final JButton saveButton = new JButton("Save group");
-    private final JButton cancelButton = new JButton("Cancel");
+    private final JButton newButton = new JButton(msg("ASC3GroupDialog.newGroup"));
+    private final JButton editButton = new JButton(msg("ASC3GroupDialog.editGroup"));
+    private final JButton breakButton = new JButton(msg("ASC3GroupDialog.breakUp"));
+    private final JButton saveButton = new JButton(msg("ASC3GroupDialog.saveGroup"));
+    private final JButton cancelButton = new JButton(msg("ASC3GroupDialog.cancel"));
     private final List<Entity> picked = new ArrayList<>();
     private final List<Entity> topChoices = new ArrayList<>();
     private boolean building;
     private boolean updatingTop;
     private Entity top;
 
+    /** The C3 Groups window for the lobby's units of the local player and local bots. */
     public ASC3GroupDialog(JFrame owner, ChatLounge lounge) {
-        super(owner, "C3 Groups", true);
+        super(owner, msg("ASC3GroupDialog.title"), true);
         this.lounge = lounge;
         for (Player p : game().getPlayersList()) {
-            if (lounge.lobbyActions.isSelfOrLocalBot(p) && game().getEntitiesVector().stream()
-                  .anyMatch(e -> e.getOwnerId() == p.getId() && kind(e) != Kind.NONE)) {
+            boolean hasC3Units = game().getEntitiesVector().stream()
+                  .anyMatch(e -> (e.getOwnerId() == p.getId()) && (kind(e) != Kind.NONE));
+            if (lounge.lobbyActions.isSelfOrLocalBot(p) && hasC3Units) {
                 players.add(p);
                 playerBox.addItem(p.getName());
             }
         }
         JPanel north = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        north.add(new JLabel("Units of:"));
+        north.add(new JLabel(msg("ASC3GroupDialog.unitsOf")));
         north.add(playerBox);
         playerBox.addActionListener(e -> {
             stopBuilding();
@@ -121,7 +149,7 @@ public class ASC3GroupDialog extends JDialog {
         });
         groupList.addListSelectionListener(e -> updateButtons());
         JPanel left = new JPanel(new BorderLayout());
-        left.setBorder(BorderFactory.createTitledBorder("C3 groups"));
+        left.setBorder(BorderFactory.createTitledBorder(msg("ASC3GroupDialog.groups")));
         left.add(new JScrollPane(groupList), BorderLayout.CENTER);
         JPanel leftButtons = new JPanel(new GridLayout(1, 3, 4, 4));
         leftButtons.add(newButton);
@@ -133,15 +161,15 @@ public class ASC3GroupDialog extends JDialog {
         // right: click units to build a group
         unitRows.setLayout(new BoxLayout(unitRows, BoxLayout.Y_AXIS));
         JPanel right = new JPanel(new BorderLayout());
-        right.setBorder(BorderFactory.createTitledBorder("Units with C3"));
+        right.setBorder(BorderFactory.createTitledBorder(msg("ASC3GroupDialog.unitsWithC3")));
         right.add(new JScrollPane(unitRows), BorderLayout.CENTER);
         JPanel rightSouth = new JPanel();
         rightSouth.setLayout(new BoxLayout(rightSouth, BoxLayout.Y_AXIS));
         JPanel topRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        topRow.add(new JLabel("Company master:"));
+        topRow.add(new JLabel(msg("ASC3GroupDialog.companyMaster")));
         topRow.add(topBox);
         topBox.addActionListener(e -> {
-            if (!updatingTop && topBox.getSelectedIndex() >= 0 && topBox.getSelectedIndex() < topChoices.size()) {
+            if (!updatingTop && (topBox.getSelectedIndex() >= 0) && (topBox.getSelectedIndex() < topChoices.size())) {
                 top = topChoices.get(topBox.getSelectedIndex());
                 refreshRows();
             }
@@ -173,11 +201,10 @@ public class ASC3GroupDialog extends JDialog {
         saveButton.addActionListener(e -> save());
         cancelButton.addActionListener(e -> stopBuilding());
 
-        JButton close = new JButton("Close");
+        JButton close = new JButton(msg("ASC3GroupDialog.close"));
         close.addActionListener(e -> setVisible(false));
         JPanel south = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        south.add(new JLabel("<html><i>Tip: right-clicking units in the lobby still has MegaMek's own C3 menu.</i>"
-              + "</html>"));
+        south.add(new JLabel(msg("ASC3GroupDialog.tip")));
         south.add(close);
 
         getContentPane().setLayout(new BorderLayout());
@@ -190,6 +217,11 @@ public class ASC3GroupDialog extends JDialog {
         setLocationRelativeTo(owner);
     }
 
+    /** Text from the Alpha Strike messages.properties. */
+    private static String msg(String key, Object... args) {
+        return (args.length == 0) ? ASMessages.getString(key) : ASMessages.getString(key, args);
+    }
+
     // --- data ------------------------------------------------------------------------------------------------
 
     private Game game() {
@@ -198,7 +230,7 @@ public class ASC3GroupDialog extends JDialog {
 
     private Player player() {
         int i = playerBox.getSelectedIndex();
-        return (i >= 0 && i < players.size()) ? players.get(i) : null;
+        return ((i >= 0) && (i < players.size())) ? players.get(i) : null;
     }
 
     private static Kind kind(Entity e) {
@@ -221,7 +253,7 @@ public class ASC3GroupDialog extends JDialog {
             return out;
         }
         for (Entity e : game().getEntitiesVector()) {
-            if (e.getOwnerId() == p.getId() && kind(e) != Kind.NONE) {
+            if ((e.getOwnerId() == p.getId()) && (kind(e) != Kind.NONE)) {
                 out.add(e);
             }
         }
@@ -234,7 +266,7 @@ public class ASC3GroupDialog extends JDialog {
         Entity r = e;
         for (int k = 0; k < MAX_NETWORK; k++) {
             Entity m = r.getC3Master();
-            if (m == null || m.equals(r)) {
+            if ((m == null) || m.equals(r)) {
                 break;
             }
             r = m;
@@ -307,8 +339,8 @@ public class ASC3GroupDialog extends JDialog {
         for (long k = 0; k <= spare; k++) {
             long m = masters + k;
             long cap = (m == 1) ? 3 : 3 * (m - 1) + (topDouble ? 3 : 0);
-            boolean mastersOk = m >= 1 && (m == 1 || m - 1 <= (topDouble ? 2 : 3));
-            if (mastersOk && slaves <= cap && m + slaves <= MAX_NETWORK) {
+            boolean mastersOk = (m >= 1) && ((m == 1) || (m - 1 <= (topDouble ? 2 : 3)));
+            if (mastersOk && (slaves <= cap) && (m + slaves <= MAX_NETWORK)) {
                 return true;
             }
         }
@@ -316,7 +348,7 @@ public class ASC3GroupDialog extends JDialog {
     }
 
     private boolean topDouble() {
-        return top != null && top.hasC3MM();
+        return (top != null) && top.hasC3MM();
     }
 
     /** May this unit still be added to the group being built? */
@@ -330,14 +362,14 @@ public class ASC3GroupDialog extends JDialog {
             return true;
         }
         if (current.nonHierarchic()) {
-            return k == current && picked.size() < (current == Kind.NOVA ? 3 : 6);
+            return (k == current) && (picked.size() < ((current == Kind.NOVA) ? 3 : 6));
         }
         if (k.nonHierarchic()) {
             return false;
         }
-        long m = count(picked, Kind.MASTER) + (k == Kind.MASTER ? 1 : 0);
-        long s = count(picked, Kind.SLAVE) + (k == Kind.SLAVE ? 1 : 0);
-        long spare = myC3Units().stream().filter(u -> !picked.contains(u) && u != e && kind(u) == Kind.MASTER)
+        long m = count(picked, Kind.MASTER) + ((k == Kind.MASTER) ? 1 : 0);
+        long s = count(picked, Kind.SLAVE) + ((k == Kind.SLAVE) ? 1 : 0);
+        long spare = myC3Units().stream().filter(u -> !picked.contains(u) && (u != e) && (kind(u) == Kind.MASTER))
               .count();
         return standardFits(m, s, spare, topDouble());
     }
@@ -349,7 +381,7 @@ public class ASC3GroupDialog extends JDialog {
         if (masters.isEmpty()) {
             return tree;
         }
-        Entity company = (top != null && masters.contains(top)) ? top : masters.get(0);
+        Entity company = ((top != null) && masters.contains(top)) ? top : masters.get(0);
         tree.put(company, new ArrayList<>());
         List<Entity> lances = masters.stream().filter(m -> m != company).toList();
         for (Entity m : lances) {
@@ -362,12 +394,12 @@ public class ASC3GroupDialog extends JDialog {
             }
             Entity best = null;               // lance masters first (fewest slaves), then the company master
             for (Entity m : lances) {
-                if (tree.get(m).size() < 3 && (best == null || tree.get(m).size() < tree.get(best).size())) {
+                if ((tree.get(m).size() < 3) && ((best == null) || (tree.get(m).size() < tree.get(best).size()))) {
                     best = m;
                 }
             }
-            if (best == null && (lances.isEmpty() || company.hasC3MM()) && tree.get(company).stream()
-                  .filter(x -> kind(x) == Kind.SLAVE).count() < 3) {
+            long companySlaves = tree.get(company).stream().filter(x -> kind(x) == Kind.SLAVE).count();
+            if ((best == null) && (lances.isEmpty() || company.hasC3MM()) && (companySlaves < 3)) {
                 best = company;                // a lone master, or a company master with a double computer
             }
             if (best != null) {
@@ -390,16 +422,18 @@ public class ASC3GroupDialog extends JDialog {
         List<Group> groups = currentGroups();
         List<Entity> units = myC3Units();
         if (units.isEmpty()) {
-            unitRows.add(new JLabel("  None of these units have C3, C3i or Nova equipment."));
+            unitRows.add(new JLabel(msg("ASC3GroupDialog.noC3Units")));
         }
         for (Entity e : units) {
             int g = groupNumberOf(e, groups);
             boolean in = picked.contains(e);
-            String role = kind(e).label + (e.hasBoostedC3() ? " (boosted)" : "") + (e.hasC3MM() ? " (x2)" : "");
-            String where = g > 0 ? " <font color='#888888'>(group " + g + (building && !in ? ", will move" : "")
-                  + ")</font>" : "";
-            JCheckBox box = new JCheckBox("<html><b>" + e.getShortName() + "</b> &nbsp;<i>" + role + "</i>" + where
-                  + "</html>", in);
+            String role = kind(e).label() + (e.hasBoostedC3() ? msg("ASC3GroupDialog.boosted") : "")
+                  + (e.hasC3MM() ? msg("ASC3GroupDialog.double") : "");
+            String where = "";
+            if (g > 0) {
+                where = msg((building && !in) ? "ASC3GroupDialog.inGroupMove" : "ASC3GroupDialog.inGroup", g);
+            }
+            JCheckBox box = new JCheckBox(msg("ASC3GroupDialog.unitRow", e.getShortName(), role, where), in);
             box.setEnabled(building && canAdd(e));
             box.addActionListener(ev -> {
                 if (box.isSelected()) {
@@ -419,10 +453,10 @@ public class ASC3GroupDialog extends JDialog {
         topBox.removeAllItems();
         topChoices.clear();
         List<Entity> masters = picked.stream().filter(e -> kind(e) == Kind.MASTER).toList();
-        if (top != null && !masters.contains(top)) {
+        if ((top != null) && !masters.contains(top)) {
             top = null;
         }
-        if (top == null && !masters.isEmpty()) {
+        if ((top == null) && !masters.isEmpty()) {
             top = masters.get(0);
         }
         for (Entity m : masters) {
@@ -432,10 +466,10 @@ public class ASC3GroupDialog extends JDialog {
         if (top != null) {
             topBox.setSelectedIndex(topChoices.indexOf(top));
         }
-        topBox.setEnabled(building && masters.size() >= 2);
+        topBox.setEnabled(building && (masters.size() >= 2));
         updatingTop = false;
         preview.setText(building ? "<html>" + previewHtml() + "</html>" : " ");
-        message.setText(building ? problem() == null ? " " : problem() : " ");
+        message.setText(building ? (problem() == null) ? " " : problem() : " ");
         updateButtons();
         unitRows.revalidate();
         unitRows.repaint();
@@ -446,17 +480,17 @@ public class ASC3GroupDialog extends JDialog {
         Kind k = pickedKind();
         long m = count(picked, Kind.MASTER);
         long s = count(picked, Kind.SLAVE);
-        if (!k.nonHierarchic() && s > 0 && m == 0) {
-            return "Must select at least 1 master.";
+        if (!k.nonHierarchic() && (s > 0) && (m == 0)) {
+            return msg("ASC3GroupDialog.needMaster");
         }
         if (picked.size() < 2) {
-            return "Click at least 2 units.";
+            return msg("ASC3GroupDialog.needTwo");
         }
         if (k.nonHierarchic()) {
             return null;
         }
         if (!standardFits(m, s, 0, topDouble())) {
-            return "Too many slaves for " + m + " master" + (m > 1 ? "s" : "") + ": add a master or drop a slave.";
+            return msg((m > 1) ? "ASC3GroupDialog.tooManySlavesN" : "ASC3GroupDialog.tooManySlaves1", m);
         }
         return null;
     }
@@ -464,23 +498,24 @@ public class ASC3GroupDialog extends JDialog {
     private String previewHtml() {
         Kind k = pickedKind();
         if (picked.isEmpty()) {
-            return "<i>Click units on the list to add them.</i>";
+            return msg("ASC3GroupDialog.clickUnits");
         }
         if (k.nonHierarchic()) {
-            int max = k == Kind.NOVA ? 3 : 6;
-            return k.label + " network: " + picked.size() + "/" + max + " units, no master needed.";
+            int max = (k == Kind.NOVA) ? 3 : 6;
+            return msg("ASC3GroupDialog.nhNetwork", k.label(), picked.size(), max);
         }
         long m = count(picked, Kind.MASTER);
-        long cap = m <= 1 ? 4 : Math.min(MAX_NETWORK, m + 3 * (m - 1) + (topDouble() ? 3 : 0));
-        StringBuilder sb = new StringBuilder(picked.size() + "/" + cap + " units");
+        long cap = (m <= 1) ? 4 : Math.min(MAX_NETWORK, m + 3 * (m - 1) + (topDouble() ? 3 : 0));
+        StringBuilder sb = new StringBuilder(msg("ASC3GroupDialog.count", picked.size(), cap));
         Map<Entity, List<Entity>> tree = structure();
         if (!tree.isEmpty()) {
             Entity company = tree.keySet().iterator().next();
-            sb.append("<br>").append(company.getShortName()).append(m > 1 ? " (company master)" : " (master)");
+            sb.append("<br>").append(company.getShortName()).append(msg((m > 1) ? "ASC3GroupDialog.companyMasterTag"
+                  : "ASC3GroupDialog.masterTag"));
             for (Entity child : tree.get(company)) {
                 sb.append("<br>&nbsp;&nbsp;- ").append(child.getShortName());
                 if (tree.containsKey(child)) {
-                    sb.append(" (lance master)");
+                    sb.append(msg("ASC3GroupDialog.lanceMasterTag"));
                     for (Entity s : tree.get(child)) {
                         sb.append("<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- ").append(s.getShortName());
                     }
@@ -491,14 +526,16 @@ public class ASC3GroupDialog extends JDialog {
     }
 
     private String groupHtml(Group g, int number) {
-        StringBuilder sb = new StringBuilder("<b>Group ").append(number).append("</b> - ");
+        StringBuilder sb = new StringBuilder(msg("ASC3GroupDialog.groupTitle", number));
         if (g.kind().nonHierarchic()) {
-            sb.append(g.kind().label).append(", ").append(g.members().size()).append(" units");
+            sb.append(msg("ASC3GroupDialog.groupKind", g.kind().label(), g.members().size()));
             g.members().forEach(e -> sb.append("<br>&nbsp;&nbsp;").append(e.getShortName()));
             return sb.toString();
         }
-        sb.append("C3, ").append(g.members().size()).append(" units<br>").append(g.root().getShortName())
-              .append(g.root().isC3CompanyCommander() ? " (company master)" : " (master)");
+        sb.append(msg("ASC3GroupDialog.groupKind", "C3", g.members().size())).append("<br>")
+              .append(g.root().getShortName())
+              .append(msg(g.root().isC3CompanyCommander() ? "ASC3GroupDialog.companyMasterTag"
+              : "ASC3GroupDialog.masterTag"));
         appendChildren(sb, g, g.root(), 1);
         return sb.toString();
     }
@@ -506,9 +543,10 @@ public class ASC3GroupDialog extends JDialog {
     private void appendChildren(StringBuilder sb, Group g, Entity master, int depth) {
         for (Entity e : g.members()) {
             Entity m = e.getC3Master();
-            if (e != master && master.equals(m) && depth < 4) {
+            if ((e != master) && master.equals(m) && (depth < 4)) {
                 sb.append("<br>").append("&nbsp;&nbsp;&nbsp;&nbsp;".repeat(depth)).append("- ")
-                      .append(e.getShortName()).append(kind(e) == Kind.MASTER ? " (lance master)" : "");
+                      .append(e.getShortName()).append((kind(e) == Kind.MASTER)
+                      ? msg("ASC3GroupDialog.lanceMasterTag") : "");
                 appendChildren(sb, g, e, depth + 1);
             }
         }
@@ -517,8 +555,8 @@ public class ASC3GroupDialog extends JDialog {
     private void updateButtons() {
         boolean editable = !lounge.localPlayer().isDone();
         newButton.setEnabled(!building && editable && !myC3Units().isEmpty());
-        editButton.setEnabled(!building && editable && groupList.getSelectedValue() != null);
-        breakButton.setEnabled(!building && editable && groupList.getSelectedValue() != null);
+        editButton.setEnabled(!building && editable && (groupList.getSelectedValue() != null));
+        breakButton.setEnabled(!building && editable && (groupList.getSelectedValue() != null));
         saveButton.setEnabled(building);
         cancelButton.setEnabled(building);
         groupList.setEnabled(!building);
@@ -558,7 +596,7 @@ public class ASC3GroupDialog extends JDialog {
             try {
                 C3Util.joinNh(game(), new ArrayList<>(picked), picked.get(0).getId(), false);
             } catch (Exception ex) {
-                message.setText("MegaMek refused that network: " + ex.getClass().getSimpleName());
+                message.setText(msg("ASC3GroupDialog.refused", ex.getClass().getSimpleName()));
                 return;
             }
         } else {
