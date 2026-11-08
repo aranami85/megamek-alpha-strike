@@ -1,0 +1,6 @@
+build/
+*.class
+sources.txt
+megamek-as-classes.jar
+MegaMek-AS.jar
+megamek_folder.txt
